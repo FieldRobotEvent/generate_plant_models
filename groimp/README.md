@@ -1,0 +1,1 @@
+FSPM_BASIC model. Simulation of source/sink driven plant growth. This Groimp model is downloaded from [https://git.wageningenur.nl/jochemevers1/FSPM_BASIC](https://git.wageningenur.nl/jochemevers1/FSPM_BASIC) under the CC BY-SA 4.0 licence.

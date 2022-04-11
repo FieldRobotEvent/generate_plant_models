@@ -1,0 +1,315 @@
+import java.io.*;
+
+import static initiation.*;
+import static updates.*;
+import static rewrites.*;
+import static parameters.*;
+import static environment.*;
+import static modules_organs.*;
+import static modules_base.*;
+import static modules_light.*;
+
+import java.util.StringTokenizer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
+import java.util.Arrays;
+
+import static parameters.*;
+
+
+protected void init()
+{
+	initiate();
+	println("latitude: "+Math.round(latitude*180/Math.PI)+" deg");
+	println("simulation starts of day of year "+startingDayOfYear);
+	println("number of species in scene: "+nrSpecies);
+	println("number of strips: "+nrStrips);
+	println("total number of plants: "+globalTotalPlants);
+	println("total area: "+0.01 * Math.round(100 * totalArea)+" m2");
+	println("field dimensions: "+longestStripLength+" x "+fieldWidth+" m (length x width)");
+	println("number of clones: "+nrClones*nrClones);
+	println("total cloned area: "+0.01*Math.round(100* totalArea*nrClones*nrClones)+" m2");
+	println();
+	for (int s=0; s<=totalSpecies-1; s++) {
+		if (spPresence[s] == true) {
+				println("species "+s+": "+speciesNames[s]);
+				println("population density: "+0.01 * Math.round(100 * dens[s])+" plants/m2");
+				println("overall density: "+0.01 * Math.round(100 * overallDens[s])+" plants/m2");
+				println("relative population density: "+0.01 * Math.round(100 * relDens[s]));		
+				println("number of plants: "+totalPlants[s]);
+				println("area: "+0.01 * Math.round(100 * area[s])+" m2");
+				println();
+		}
+	}
+	//println(longestStripLength%cellSize==0&&fieldWidth%cellSize==0?"":"ERROR: fieldsize NOT divisible by soil cell size");
+	if (functional == false) {println("!! SET TO FIXED GROWTH AND DEVELOPMENT !!");println();}
+}
+
+private void step()
+{
+	calcSimTime();
+	println(
+		time+" days, "
+		+realTime+" s, "
+		+"DOY "+dayOfYear
+		+", DL "+0.1*Math.round(10*dayLength)+" h, "
+		+"PPFD "+Math.round(PPFD)+" umol/m2/s, "
+		+"temp "+0.1*Math.round(10*tav)+" C"
+	);
+
+	if (flux == true) {
+		flm.compute();
+	} else {
+		lm.compute();
+	}
+	develop();
+	renew();
+	
+	if (snapShot == true) {
+		if      (time < 10)		{/*makeSnapshot(path+"basic00"+time+".png");*/export3DScene(path+"basic00"+time+".obj","obj");}
+		else if (time < 100)	{/*makeSnapshot(path+"basic0" +time+".png");*/export3DScene(path+"basic0"+time+".obj","obj");}
+		else             		{/*makeSnapshot(path+"basic"  +time+".png");*/export3DScene(path+"basic"+time+".obj","obj");}
+	}	
+}
+
+// contains parameter changes in consecutive runs. If no changes, simulations are replicates
+// NB first simulation sims == 0, takes parameters from parameterX.rgg
+void updateParameters()
+{
+/*	if (sims == 0) {rowDistance[maize] = 0.75; plantDistance[maize] = 0.05;}
+	if (sims == 1) {plantDistance[maize] = 0.1;}
+	if (sims == 2) {plantDistance[maize] = 0.2;}
+	if (sims == 3) {rowDistance[maize] = 0.5; plantDistance[maize] = 0.075;}
+	if (sims == 4) {plantDistance[maize] = 0.15;}
+	if (sims == 5) {plantDistance[maize] = 0.3;}
+*/
+}
+
+public void run()
+{
+	// at the start initiate and clear all tables
+	if (sims == 0 && time == 0) {initDatasets();}
+	// simulate until end is reached
+	if (end == false && time != halt) {
+		step();
+	} else {
+		sims++;
+		// change parameters and reset scene for next simulation
+		if (sims < nrSims) {
+			updateParameters();
+			resetCounters();
+			reset();
+		// if all simulations are done, write output files
+		} else {
+			stop = System.currentTimeMillis();
+			avgRate = 0.01*Math.round(100 * time / ((stop-start)/1000));
+			println("average simulation rate: "+avgRate+" steps/s");
+			if (writeFieldTable == true) {exportData(fieldOutput, "field");}
+			if (writePlantTable == true) {exportData(plantOutput, "plant");}
+			if (writeLight == true) {exportData(combiLight, "light");}
+		}
+	}
+}
+
+ void swColor() {
+	de.grogra.imp3d.View3D view = de.grogra.imp3d.View3D.getDefaultView(workbench());
+	if (sRFR == true) {sRFR = false;} else {sRFR = true;}
+	view.repaint();
+}
+
+
+/* removes all organs with area > 0; NEEDS TO BE INTEGRATED IN MODULES */
+ void defiolate()
+[
+	go:GrowingOrgan, (go.area > 0) ==>>;
+	{derive();}
+	pb:PlantBase ::> {
+		double x = pb[biomass];
+		pb.updateBiomass();
+		double r = pb[biomass]/x;
+		println(r);
+		pb[reservePool]*=r;
+	}
+]
+
+ void makeGap()
+[
+	pb:PlantBase RH Seed, (pb[row] >= 2 && pb[row] <= 2 && pb[pos] >= 11 && pb[pos] <= 15) 	==>>;
+	
+	pb:PlantBase RH Seed, (pb[row] >= 3 && pb[row] <= 3 && pb[pos] >= 1 && pb[pos] <= 5)	==>>;
+
+]
+
+
+/* write output text file */
+void exportData(DatasetRef dsr, String name) {
+	PrintWriter tmpfile = new PrintWriter(new FileWriter(pathData+name+".txt"));
+	Dataset dataset = dsr.resolve();
+	for(int j=0;j<dataset.getColumnCount(); j++) {
+		tmpfile.print(dataset.getColumnKey(j)+"	");
+	}
+	tmpfile.println();
+	for(int i=0;i<dataset.getRowCount(); i++) {
+		for(int j=0;j<dataset.getColumnCount(); j++) {
+			tmpfile.print(dataset.getCell(i,j)+"	");
+		}
+		tmpfile.println();
+	}
+	tmpfile.flush();
+	tmpfile.close();
+}
+
+/* import csv data file */
+protected static String fileType = "csv";
+	protected static char separatorChar = ',';
+	protected static char decimalChar = '.';
+	protected static char quoteChar = '"';
+	protected static boolean header = true; // keep head or not, however current version can not include head.
+	protected static int skipLines = 0; // skip number of lines
+	
+	static List dataRecord = new ArrayList();
+	
+/*   read two dimensional arrays from csv file  */
+	
+/*public static double [][] readData(String filename) {
+			 try {
+				
+			 //create BufferedReader to read csv file
+			 BufferedReader br = new BufferedReader(new FileReader(pathInput + filename));
+			 String strLine = "";
+             StringTokenizer st = null;
+             int lineNumber = 0, tokenNumber = 0;
+             
+			 // skip the header line
+			 if(header == false) br.readLine();
+			 
+			 // skip lines
+			 for (int i = 0; i < skipLines; i++) {
+                br.readLine();
+				lineNumber++;
+             } 
+			 
+			 //read file line by line
+			 while( (strLine = br.readLine()) != null) {
+				 lineNumber++;
+				 
+				 //replacing decimalChar if it is not a dot by dot
+				 if(decimalChar!='.') strLine = strLine.replaceAll(decimalChar, '.');
+				 
+                 //break line using separatorChar as separator.
+                 st = new StringTokenizer(strLine, separatorChar);
+                 
+				 if(lineNumber==1 + skipLines) {
+					 for (int i = 0; i < st.countTokens(); i++) {
+						 dataRecord.add(new Vector());
+					 }
+				 }
+				 
+				 Vector tmp;
+				 String token;
+                 while(st.hasMoreTokens()) {
+					 tmp = (Vector)dataRecord.get(tokenNumber);
+					 tmp.add(st.nextToken().replaceAll('"',' '));
+					 tokenNumber++;
+				 }
+				 //reset token number
+				 tokenNumber = 0;
+			 }
+         } catch(Exception e) {
+             println("FileReaderC: Error: " + e);                  
+         }
+
+	     int rowNumber = getColumn(1).size();
+		 int columnNumber = dataRecord.size();
+		 println(rowNumber+"   "+columnNumber);
+		 double dataArray[][] = new double[rowNumber][columnNumber]; 
+		 int row = 0, column = 0;
+		  for ( row = 0; row < rowNumber; row++) {
+			 for( column = 0; column < columnNumber; column++ ) {
+				 try{
+					 dataArray[row][column] = Double.parseDouble((String)getElement(column,row));
+				 } catch(NumberFormatException e) {
+					println("NumberFormatException row = "+row+" column = "+column+"  "+getElement(column,row));							 
+				 }
+			 }
+		 }
+		 row = 0; column = 0;
+		 dataRecord.clear();
+		 return(dataArray);
+		
+	}
+
+	public static List getDataRecord() {
+		return dataRecord;
+	}
+
+	public static Vector getColumn(int i) {
+		return (Vector)dataRecord.get(i);
+	}
+
+	public static Object[] getRow(int i) {
+		Object[] tmp = new Object[dataRecord.size()];
+		for(int j = 0; j<tmp.length; j++) {
+			tmp[j] = getColumn(j).get(i);
+		}
+		return tmp;
+	}
+
+	public static Object getElement(int column, int row) {
+		return getColumn(column).get(row);
+	}
+
+*/
+ void light() {
+	int layers = 5;
+	double dist = 0.1;
+	for (int i=0; i<=layers; i++)
+	{
+		double delta_h = i*dist;
+		[
+			ts:TileSensor ::> ts.setTranslation(0,0,delta_h);
+		]
+	
+		{
+			derive();
+			lm.compute();
+		}
+	
+		[
+			ts:TileSensor ::>
+			{
+				ts.calcLight();
+				ts[length] += 0;
+				println("Height: "+delta_h+", light: "+ts.absm2);
+			}
+		]
+	}
+	[
+		//ts:TileSensor ::> ts.setTranslation(0,0,-0.1);
+	]
+}
+
+
+ void cutNeighb() {
+	if ((double)globalTotalPlants % 2 != 0) {
+		long focalNr = 1 + globalTotalPlants / 2;
+		[
+			pb:PlantBase, (pb[plantNumber] != focalNr) ==>>;
+		]
+	} else {
+		println("There is no central plant; please choose ODD nr of rows and nr of plants per row");
+	}
+}
+
+ void cutFocal() {
+	if ((double)globalTotalPlants % 2 != 0) {
+		long focalNr = 1 + globalTotalPlants / 2;
+		[
+			pb:PlantBase, (pb[plantNumber] == focalNr) ==>>;
+		]
+	} else {
+		println("There is no central plant; please choose ODD nr of rows and nr of plants per row");
+	}
+}
+

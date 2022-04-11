@@ -1,0 +1,97 @@
+import static parameters.*;
+
+/* cereal */
+
+{
+	// field parameters
+	nrRows[cereal] = 5;                 // number of rows
+	nrPlants[cereal] = 1;               // number of plants in a row
+	rowDistance[cereal] = 0.15;        // distance between rows
+	plantDistance[cereal] = 0.15;       // distance between plants in a row
+	delay[cereal] = 0;                  // germination delay after start of simulation (in days, to represent late sowing)
+	harvest[cereal] = 110;              // duration, i.e. harvest/removal time after emergence (in days)
+	hexa[cereal] = false;               // true: hexagonal layout, rectangular otherwise
+	offspotIntraRow[cereal] = 0.025;			// fraction of plant distance the plant seed is off-spot
+	offspotInterRow[cereal] = 0.05;			// fraction of row distance the plant seed is off-spot
+
+	// plant parameters
+	determinate[cereal] = true;			// TRUE = determinate, FALSE = indeterminate
+	plastochron[cereal] = 43;//45;           // time between creation of two phytomers (dd)
+	phyllochron[cereal] = 86;//90;			// time between appearance of two leaves (dd)
+	finalPhytNum[cereal] = 10;       // final number of main stem vegetative phytomers
+	nrShortInternodes[cereal] = 4;      // number of bottom internodes that should not elongate and have no mass
+
+	wmaxRoot[cereal] = 2000;//3000;           // maximum root system biomass
+	wmaxFlower[cereal] = 3000;        // maximum flower/fruit biomass
+	wmaxInt[cereal] = 266;//400;//300;             // maximum internode biomass
+	wmaxLeaf[cereal] = 266;//400;//300;//200;             // maximum leaf biomass
+	teRoot[cereal] = 1800;              // root growth duration
+	teFlower[cereal] = 800;             // flower/fruit growth duration
+	teInt[cereal] = 182;                // internode growth duration
+	teLeaf[cereal] = 220;               // leaf growth duration
+
+	maxWidthInt[cereal] = 0.005;			// maxium internode width
+	specificInternodeLength[cereal] = 0.6;//0.5;   // internode ratio length / biomass (mm/mg)
+
+	amax[cereal] = 25;                  // max photosynthesis rate
+	eff[cereal] = 0.06;                 // initial light use efficiency (initial slope of light response curve)
+	C4[cereal] = false;					// false: C3, true: C4 (parameter only valid when FvCB is true)
+	nitro[cereal] = 0.0543;					// leaf nitrogen mass fraction at top of canopy
+
+	LMA[cereal] = 4.6;//3.5;                    // leaf mass per unit area (mg / cm2)
+	leafLife[cereal] = 4;//2;               // life span of a leaf since appearance (expressed as X times its growth duration (te))
+	lwRatio[cereal] = 27;//25;               // ratio between leaf blade length and width
+	maxWidth[cereal] = .7249;//0.6235;             // location on the leaf where width is maximal (fraction of length)
+	shapeCoeff[cereal] = 0.2027;//0.7552;            // leaf shape coefficient (0 = rectangular, high value = pinched)
+	leafCurve[cereal] = 46;//;            // leaf curvature - angle between bottom and top of leaf blade (0 = flat)
+
+	rankLower[cereal] = 3;				// final phtyomer that has properties of lower phytomers (e.g. nr of leaflets, leaf angle, etc) 
+
+	leafAngleLower[cereal] = 61;//40;		// insertion angle of lower leaves (90 = horizontal)
+	leafAngleUpper[cereal] = 40;//30;//40;		// insertion angle of upper leaves (90 = horizontal)
+
+	nrLeafletsLower[cereal] = 1;				 // number of leaflets per leaf for the lower phytomers
+	nrLeafletsUpper[cereal] = 1;				 // number of leaflets per leaf for the upper phytomers
+	petioleFraction[cereal] = 0.3;		 // fraction of biomass partitioned to the petiole
+	petioluleFraction[cereal] = 0;	 // fraction of biomass partitioned to the petiolule
+	specificPetioleLength[cereal] = 2.5; // specific petiole length (mm/mg)
+	specificPetioluleLength[cereal] = 5.0;// specific petiolule length (mm/mg)
+
+	nrLeavesLower[cereal] = 1;			// number of leaves per phytomer for the lower phytomers
+	nrLeavesUpper[cereal] = 1;			// number of leaves per phytomer for the upper phytomers
+	phyllotaxisLower[cereal] = 180;       // angle between consecutive leaves along a stem for the lower phytomers
+	phyllotaxisUpper[cereal] = 137;       // angle between consecutive leaves along a stem for the upper phytomers
+
+	varDelay[cereal] = 0;               // max variation in germination delay (in days, 0 = simultaneous germination)
+	seedMass[cereal] = 25;      	      // seed endosperm mass in mg
+
+	SASextend[cereal] = true;				// toggle internode SAS extention response
+
+	branching[cereal] = true;			 // toggle branching
+	tillersOnly[cereal] = true;		// true: bud break only if parent internode has length 0 (= tillering)
+	dominance[cereal] = 0;				// minimum dominance, so maximal branching phytomer distance, at infinitely large source/sink ratio (no neighbours)
+	srAbortThresh[cereal] = 1;//0.5;			// threshold sink/source ratio for branch abortion
+
+	tb[cereal] = 0;						// base temperature for thermal time calculation
+
+	EL[cereal] = 51; 					// Root elongation rate mm mm-1 day-1 
+	Dinit[cereal] = 0.0012;				// Initial root Diameter in m 
+	RTD[cereal]	= 200;					// Root tissue density (g/cm3) (Pages 2013 - generic)
+	MP[cereal] = 5;						// Maximum number of root primordia 
+	ER[cereal] = 0.056;					// Emergence rate of root primordia per day = 0.968 at 25 degrees which is 0.056 per dregreeday. 
+	IBD[cereal] = 0.01;				// Inter Branch Distance 
+	IBDmax[cereal] = 0.005; 			// Inter branch distance of the highest root order 
+	RZone[cereal] = 0.01;				// No lateral zone in m 
+	RDM0[cereal] = 0.12;					// Ratio Daughter Mother Diameter 
+	RDM1[cereal] = 0.375;					// Ratio Daughter Mother Diameter
+	sdD[cereal] = 0.15;					// Standard deviation diameter for RDM 
+	angleAVG[cereal] = 40;//60;				// average insertion angle of lateral roots
+	angleVAR[cereal] = 20;				// variation in the insertion angle of lateral roots
+	MCP[cereal]	= 5;					//random root movement based on mechanical constraints; radial degrees/m
+	MaxRootOrder[cereal] = 1;//0;
+	fineRootD[cereal] = 0.1;			// Diameter in m/m
+	fineRootDensity[cereal]	= 32;		// m fine roots/m coarse root	
+	RLratio[cereal]	= 1;	 			// Root/Leaf ratio
+	fMyc[cereal] = 0;					// +MF 0.00005
+	Groot[cereal] = 0.1;//0.03;//0.01;				// Base rate of Gravitropism 
+}

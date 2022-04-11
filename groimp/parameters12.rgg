@@ -1,0 +1,97 @@
+import static parameters.*;
+
+/* pea */
+
+{
+	// field parameters
+	nrRows[pea] = 1;                  // number of rows
+	nrPlants[pea] = 1;                // number of plants in a row
+	rowDistance[pea] = 0.5;          // distance between rows
+	plantDistance[pea] = 0.5;        // distance between plants in a row
+	delay[pea] = 0;                   // germination delay after start of simulation (in days, to represent late sowing)
+	harvest[pea] = 77;               // duration, i.e. harvest/removal time after emergence (in days)
+	hexa[pea] = false;                // true: hexagonal layout, rectangular otherwise
+	offspotIntraRow[pea] = 0.05;			// fraction of plant distance the plant seed is off-spot
+	offspotInterRow[pea] = 0.05;			// fraction of row distance the plant seed is off-spot
+	                                    
+	// plant parameters                 
+	determinate[pea] = false;			// TRUE = determinate, FALSE = indeterminate
+	plastochron[pea] = 70;            // time between creation of two phytomers (dd)
+	phyllochron[pea] = 70;			// time between appearance of two leaves (dd)
+	finalPhytNum[pea] = 6;        // final number of main stem vegetative phytomers
+	nrShortInternodes[pea] = 0;       // number of bottom internodes that should not elongate 
+                                        
+	wmaxRoot[pea] = 20000;            // maximum root system biomass
+	wmaxFlower[pea] = 100000;         // maximum flower/fruit biomass
+	wmaxInt[pea] = 1000;              // maximum internode biomass
+	wmaxLeaf[pea] = 750;              // maximum leaf biomass
+	teRoot[pea] = 1800;               // root growth duration
+	teFlower[pea] = 500;              // flower/fruit growth duration
+	teInt[pea] = 500;                 // internode growth duration
+	teLeaf[pea] = 500;                // leaf growth duration
+
+	maxWidthInt[pea] = 0.003;			// maxium internode width
+	specificInternodeLength[pea] = 0.075;  // internode ratio length / biomass (mm/mg)
+
+	amax[pea] = 25;                   // max photosynthesis rate
+	eff[pea] = 0.06;                  // initial light use efficiency (initial slope of light response curve)
+	C4[pea] = false;					// false: C3, true: C4 (parameter only valid when FvCB is true)
+	nitro[pea] = 0.0625;					// leaf nitrogen mass fraction at top of canopy
+	
+	LMA[pea] = 4;                     // leaf mass per unit area (mg / cm2)
+	leafLife[pea] = 2;                // life span of a leaf since appearance (expressed as X times its growth duration (te))
+	lwRatio[pea] = 2;                 // ratio between leaf blade length and width
+	maxWidth[pea] = 0.5;             // location on the leaf where width is maximal (fraction of length)
+	shapeCoeff[pea] = 1.2;            // leaf shape coefficient (0 = rectangular, high value = pinched)
+	leafCurve[pea] = 70;              // leaf curvature - angle between bottom and top of leaf blade (0 = flat)
+
+	rankLower[pea] = 2;				// final phtyomer that has properties of lower phytomers (e.g. nr of leaflets, leaf angle, etc) 
+
+	leafAngleLower[pea] = 80;		// insertion angle of lower leaves (90 = horizontal)
+	leafAngleUpper[pea] = 80;		// insertion angle of upper leaves (90 = horizontal)
+
+	nrLeafletsLower[pea] = 1;				 // number of leaflets per leaf for the lower phytomers
+	nrLeafletsUpper[pea] = 1;				 // number of leaflets per leaf for the upper phytomers
+	petioleFraction[pea] = 0.05;		 // fraction of biomass partitioned to the petiole
+	petioluleFraction[pea] = 0.025;	 // fraction of biomass partitioned to the petiolule
+	specificPetioleLength[pea] = 1.5; // specific petiole length (mm/mg)
+	specificPetioluleLength[pea] = 5.0;// specific petiolule length (mm/mg)
+	
+	nrLeavesLower[pea] = 2;			// number of leaves per phytomer for the lower phytomers
+	nrLeavesUpper[pea] = 1;			// number of leaves per phytomer for the upper phytomers
+	phyllotaxisLower[pea] = 90;           // angle between consecutive leaves along a stem for the lower phytomers
+	phyllotaxisUpper[pea] = 137;           // angle between consecutive leaves along a stem for the upper phytomers
+	
+	varDelay[pea] = 5;                // max variation in germination delay (in days, 0 = simultaneous germination)
+	seedMass[pea] = 40;             // seed endosperm mass in mg
+	
+	SASextend[pea] = true;				// toggle internode SAS extention response
+	
+	branching[pea] = false;			 // toggle branching
+	tillersOnly[pea] = false;		// true: bud break only if parent internode has length 0 (= tillering)
+	dominance[pea] = 0;				// minimum dominance, so maximal branching phytomer distance, at infinitely large source/sink ratio (no neighbours)
+	srAbortThresh[pea] = 0.2;			// threshold sink/source ratio for branch abortion
+	
+	tb[pea] = 0;						// base temperature for thermal time calculation
+                  
+	EL[pea] = 18; 					// Root elongation rate mm mm-1 day-1 (Pages 2013 - Pea)
+	Dinit[pea] = 0.0011;				// Initial root Diameter in m (Pages 2013 - Pea)
+	RTD[pea]	= 200;					// Root tissue density (g/cm3) (Pages 2013 - generic)
+	MP[pea] = 0;						// Maximum number of root primordia (Pages 2013 - Pea)
+	ER[pea] = 0.056;					// Emergence rate of root primordia per day = 0.968 at 25 degrees which is 0.056 per dregreeday. (Pages 2013 - Pea)
+	IBD[pea] = 0.0078;				// Inter Branch Distance (Pages 2013 - Pea)
+	IBDmax[pea] = 0.039; 			// Inter branch distance of the highest root order (Pages 2013 - Pea)
+	RZone[pea] = 0.01;				// No lateral zone in m 
+	RDM0[pea] = 0.5;					// Ratio Daughter Mother Diameter (Pages 2013 - Pea)
+	RDM1[pea] = 0.375;					// Ratio Daughter Mother Diameter (Pages 2013 - Pea)
+	sdD[pea] = 0.09;					// Standard deviation diameter for RDM (Pages 2013 - Pea)
+	angleAVG[pea] = 60;				// average insertion angle of lateral roots
+	angleVAR[pea] = 20;				// variation in the insertion angle of lateral roots
+	MCP[pea]	= 5;					//random root movement based on mechanical constraints; radial degrees/m
+	MaxRootOrder[pea] = 1;
+	fineRootD[pea] = 0.1;			// Diameter in m/m
+	fineRootDensity[pea]	= 32;		// m fine roots/m coarse root	
+	RLratio[pea]	= 1;	 			// Root/Leaf ratio
+	fMyc[pea] = 0;					// +MF 0.00005
+	Groot[pea] = 0.01;				// Base rate of Gravitropism 
+}

@@ -1,0 +1,97 @@
+import static parameters.*;
+
+/* hemp */
+
+{
+	// field parameters
+	nrRows[hemp] = 1;                  // number of rows
+	nrPlants[hemp] = 1;                // number of plants in a row
+	rowDistance[hemp] = 0.2;          // distance between rows
+	plantDistance[hemp] = 0.2;        // distance between plants in a row
+	delay[hemp] = 0;                   // germination delay after start of simulation (in days, to represent late sowing)
+	harvest[hemp] = 60;               // duration, i.e. harvest/removal time after emergence (in days)
+	hexa[hemp] = false;                // true: hexagonal layout, rectangular otherwise
+	offspotIntraRow[hemp] = 0;			// fraction of plant distance the plant seed is off-spot
+	offspotInterRow[hemp] = 0;			// fraction of row distance the plant seed is off-spot
+	                                    
+	// plant parameters                 
+	determinate[hemp] = true;			// TRUE = determinate, FALSE = indeterminate
+	plastochron[hemp] = 70;            // time between creation of two phytomers (dd)
+	phyllochron[hemp] = 70;			// time between appearance of two leaves (dd)
+	finalPhytNum[hemp] = 14;        // final number of main stem vegetative phytomers
+	nrShortInternodes[hemp] = 0;       // number of bottom internodes that should not elongate 
+                                        
+	wmaxRoot[hemp] = 20000;            // maximum root system biomass
+	wmaxFlower[hemp] = 250000;         // maximum flower/fruit biomass
+	wmaxInt[hemp] = 1000;              // maximum internode biomass
+	wmaxLeaf[hemp] = 1000;              // maximum leaf biomass
+	teRoot[hemp] = 1800;               // root growth duration
+	teFlower[hemp] = 500;              // flower/fruit growth duration
+	teInt[hemp] = 500;                 // internode growth duration
+	teLeaf[hemp] = 500;                // leaf growth duration
+
+	maxWidthInt[hemp] = 0.003;			// maxium internode width
+	specificInternodeLength[hemp] = 0.075;  // internode ratio length / biomass (mm/mg)
+
+	amax[hemp] = 25;                   // max photosynthesis rate
+	eff[hemp] = 0.06;                  // initial light use efficiency (initial slope of light response curve)
+	C4[hemp] = false;					// false: C3, true: C4 (parameter only valid when FvCB is true)
+	nitro[hemp] = 0.05;					// leaf nitrogen mass fraction at top of canopy
+	
+	LMA[hemp] = 4;                     // leaf mass per unit area (mg / cm2)
+	leafLife[hemp] = 2;                // life span of a leaf since appearance (expressed as X times its growth duration (te))
+	lwRatio[hemp] = 5;                 // ratio between leaf blade length and width
+	maxWidth[hemp] = 0.65;             // location on the leaf where width is maximal (fraction of length)
+	shapeCoeff[hemp] = 0.5;            // leaf shape coefficient (0 = rectangular, high value = pinched)
+	leafCurve[hemp] = 70;              // leaf curvature - angle between bottom and top of leaf blade (0 = flat)
+
+	rankLower[hemp] = 2;				// final phtyomer that has properties of lower phytomers (e.g. nr of leaflets, leaf angle, etc) 
+
+	leafAngleLower[hemp] = 80;		// insertion angle of lower leaves (90 = horizontal)
+	leafAngleUpper[hemp] = 80;		// insertion angle of upper leaves (90 = horizontal)
+
+	nrLeafletsLower[hemp] = 7;				 // number of leaflets per leaf for the lower phytomers
+	nrLeafletsUpper[hemp] = 7;				 // number of leaflets per leaf for the upper phytomers
+	petioleFraction[hemp] = 0.05;		 // fraction of biomass partitioned to the petiole
+	petioluleFraction[hemp] = 0.10;	 // fraction of biomass partitioned to the petiolule
+	specificPetioleLength[hemp] = 5; // specific petiole length (mm/mg)
+	specificPetioluleLength[hemp] = 10;// specific petiolule length (mm/mg)
+	
+	nrLeavesLower[hemp] = 2;			// number of leaves per phytomer for the lower phytomers
+	nrLeavesUpper[hemp] = 2;			// number of leaves per phytomer for the upper phytomers
+	phyllotaxisLower[hemp] = 90;           // angle between consecutive leaves along a stem for the lower phytomers
+	phyllotaxisUpper[hemp] = 90;          // angle between consecutive leaves along a stem for the upper phytomers
+	
+	varDelay[hemp] = 0;                // max variation in germination delay (in days, 0 = simultaneous germination)
+	seedMass[hemp] = 50;             // seed endosperm mass in mg
+	
+	SASextend[hemp] = true;				// toggle internode SAS extention response
+	
+	branching[hemp] = false;			 // toggle branching
+	tillersOnly[hemp] = false;		// true: bud break only if parent internode has length 0 (= tillering)
+	dominance[hemp] = 0.5;				// minimum dominance, so maximal branching phytomer distance, at infinitely large source/sink ratio (no neighbours)
+	srAbortThresh[hemp] = 0;			// threshold sink/source ratio for branch abortion
+	
+	tb[hemp] = 0;						// base temperature for thermal time calculation
+
+	EL[hemp] = 51; 					// Root elongation rate mm mm-1 day-1 
+	Dinit[hemp] = 0.0011;				// Initial root Diameter in m 
+	RTD[hemp]	= 200;					// Root tissue density (g/cm3) (Pages 2013 - generic)
+	MP[hemp] = 5;						// Maximum number of root primordia 
+	ER[hemp] = 0.056;					// Emergence rate of root primordia per day = 0.968 at 25 degrees which is 0.056 per dregreeday. 
+	IBD[hemp] = 0.0078;				// Inter Branch Distance 
+	IBDmax[hemp] = 0.039; 			// Inter branch distance of the highest root order 
+	RZone[hemp] = 0.01;				// No lateral zone in m 
+	RDM0[hemp] = 0.5;					// Ratio Daughter Mother Diameter 
+	RDM1[hemp] = 0.375;					// Ratio Daughter Mother Diameter 
+	sdD[hemp] = 0.09;					// Standard deviation diameter for RDM 
+	angleAVG[hemp] = 60;				// average insertion angle of lateral roots
+	angleVAR[hemp] = 20;				// variation in the insertion angle of lateral roots
+	MCP[hemp]	= 5;					//random root movement based on mechanical constraints; radial degrees/m
+	MaxRootOrder[hemp] = 0;
+	fineRootD[hemp] = 0.1;			// Diameter in m/m
+	fineRootDensity[hemp]	= 32;		// m fine roots/m coarse root	
+	RLratio[hemp]	= 1;	 			// Root/Leaf ratio
+	fMyc[hemp] = 0;					// +MF 0.00005
+	Groot[hemp] = 0.01;				// Base rate of Gravitropism 
+}

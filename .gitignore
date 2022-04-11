@@ -1,0 +1,24 @@
+# Ignore folders
+/venv
+/generated/*
+/generated_groimp/*
+/.vscode/*
+
+# Ignore file patterns
+*.pyc
+*.rgg~
+
+# Ignore specific files
+groimp/datafield.txt
+groimp/field.txt
+groimp/dataplant.txt
+groimp/plant.txt
+groimp/parameters.rgg
+groimp/project.gs
+groimp/graph.xml
+
+# We want to share some vscode settings
+!.vscode/settings.json
+!.vscode/extensions.json
+!/generated/.gitkeep
+!/generated_groimp/.gitkeep

@@ -1,0 +1,97 @@
+import static parameters.*;
+
+/* grass */
+
+{
+	// field parameters
+	nrRows[grass] = 4;                // number of rows
+	nrPlants[grass] = 4;              // number of plants in a row
+	rowDistance[grass] = 0.75;       // distance between rows
+	plantDistance[grass] = 0.75;      // distance between plants in a row
+	delay[grass] = 0;                 // germination delay after start of simulation (in days, to represent late sowing)
+	harvest[grass] = 120;             // duration, i.e. harvest/removal time after emergence (in days)
+	hexa[grass] = false;              // true: hexagonal layout, rectangular otherwise
+	offspotIntraRow[grass] = 0;			// fraction of plant distance the plant seed is off-spot
+	offspotInterRow[grass] = 0;			// fraction of row distance the plant seed is off-spot
+	                                         
+	// plant parameters                      
+	determinate[grass] = true;			// TRUE = determinate, FALSE = indeterminate
+	plastochron[grass] = 45;          // time between creation of two phytomers (dd)
+	phyllochron[grass] = 90;			// time between appearance of two leaves (dd)
+	finalPhytNum[grass] = 10;      // final number of main stem vegetative phytomers
+	nrShortInternodes[grass] = 4;     // number of bottom internodes that should not elongate and have no mass
+	                                         
+	wmaxRoot[grass] = 2000;          // maximum root system biomass
+	wmaxFlower[grass] = 300;       // maximum flower/fruit biomass
+	wmaxInt[grass] = 100;            // maximum internode biomass
+	wmaxLeaf[grass] = 39;            // maximum leaf biomass
+	teRoot[grass] = 1800;             // root growth duration
+	teFlower[grass] = 800;            // flower/fruit growth duration
+	teInt[grass] = 200;               // internode growth duration
+	teLeaf[grass] = 100;              // leaf growth duration
+    
+	maxWidthInt[grass] = 0.002;		// maximum internode width
+	specificInternodeLength[grass] = 0.5;   // internode ratio length / biomass (mm/mg)
+
+	amax[grass] = 25;                 // max photosynthesis rate
+	eff[grass] = 0.06;                // initial light use efficiency (initial slope of light response curve)
+	C4[grass] = false;					// false: C3, true: C4 (parameter only valid when FvCB is true)
+	nitro[grass] = 0.0465;					// leaf nitrogen mass fraction at top of canopy
+	
+	LMA[grass] = 4.3;                   // leaf mass per unit area (mg / cm2)
+	leafLife[grass] = 4;              // life span of a leaf since appearance (expressed as X times its growth duration (te))
+	lwRatio[grass] = 28;              // ratio between leaf blade length and width
+	maxWidth[grass] = 0.6235;            // location on the leaf where width is maximal (fraction of length)
+	shapeCoeff[grass] = 0.7552;           // leaf shape coefficient (0 = rectangular, high value = pinched)
+	leafCurve[grass] = 100;           // leaf curvature - angle between bottom and top of leaf blade (0 = flat)
+
+	rankLower[grass] = 2;				// final phtyomer that has properties of lower phytomers (e.g. nr of leaflets, leaf angle, etc) 
+
+	leafAngleLower[grass] = 40;		// insertion angle of lower leaves (90 = horizontal)
+	leafAngleUpper[grass] = 40;		// insertion angle of upper leaves (90 = horizontal)
+
+	nrLeafletsLower[grass] = 1;				 // number of leaflets per leaf for the lower phytomers
+	nrLeafletsUpper[grass] = 1;				 // number of leaflets per leaf for the upper phytomers
+	petioleFraction[grass] = 0.3;		 // fraction of biomass partitioned to the petiole
+	petioluleFraction[grass] = 0;	 // fraction of biomass partitioned to the petiolule
+	specificPetioleLength[grass] = 2.5; // specific petiole length (mm/mg)
+	specificPetioluleLength[grass] = 5.0;// specific petiolule length (mm/mg)
+	
+	nrLeavesLower[grass] = 1;			// number of leaves per phytomer for the lower phytomers
+	nrLeavesUpper[grass] = 1;			// number of leaves per phytomer for the upper phytomers
+	phyllotaxisLower[grass] = 180;           // angle between consecutive leaves along a stem for the lower phytomers
+	phyllotaxisUpper[grass] = 137;           // angle between consecutive leaves along a stem for the upper phytomers
+	
+	varDelay[grass] = 0;              // max variation in germination delay (in days, 0 = simultaneous germination)
+	seedMass[grass] = 7;      	  // seed endosperm mass in mg
+	
+	SASextend[grass] = true;				// toggle internode SAS extention response
+	
+	branching[grass] = true;			 // toggle branching
+	tillersOnly[grass] = true;		// true: bud break only if parent internode has length 0 (= tillering)
+	dominance[grass] = 0.2;				// minimum dominance, so maximal branching phytomer distance, at infinitely large source/sink ratio (no neighbours)
+	srAbortThresh[grass] = 0;		// threshold sink/source ratio for branch abortion
+	
+	tb[grass] = 0;						// base temperature for thermal time calculation
+
+	EL[grass] = 51; 					// Root elongation rate mm mm-1 day-1 
+	Dinit[grass] = 0.0012;				// Initial root Diameter in m 
+	RTD[grass]	= 200;					// Root tissue density (g/cm3) (Pages 2013 - generic)
+	MP[grass] = 5;						// Maximum number of root primordia 
+	ER[grass] = 0.056;					// Emergence rate of root primordia per day = 0.968 at 25 degrees which is 0.056 per dregreeday. 
+	IBD[grass] = 0.01;				// Inter Branch Distance 
+	IBDmax[grass] = 0.005; 			// Inter branch distance of the highest root order
+	RZone[grass] = 0.01;				// No lateral zone in m 
+	RDM0[grass] = 0.12;					// Ratio Daughter Mother Diameter 
+	RDM1[grass] = 0.375;					// Ratio Daughter Mother Diameter 
+	sdD[grass] = 0.15;					// Standard deviation diameter for RDM 
+	angleAVG[grass] = 60;				// average insertion angle of lateral roots
+	angleVAR[grass] = 20;				// variation in the insertion angle of lateral roots
+	MCP[grass]	= 5;					//random root movement based on mechanical constraints; radial degrees/m
+	MaxRootOrder[grass] = 0;
+	fineRootD[grass] = 0.1;			// Diameter in m/m
+	fineRootDensity[grass]	= 32;		// m fine roots/m coarse root	
+	RLratio[grass]	= 1;	 			// Root/Leaf ratio
+	fMyc[grass] = 0;					// +MF 0.00005
+	Groot[grass] = 0.01;				// Base rate of Gravitropism 
+}

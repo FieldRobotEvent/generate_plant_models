@@ -1,0 +1,469 @@
+import static environment.*;
+
+// species value and name assignment
+static int dicot1 = 0; static int dicot2 = 1; static int cheno = 2; static int at = 3; static int cereal = 4;
+static int grass = 5; static int hemp = 6; static int weed = 7; static int sunflower = 8;
+static int maize = 9; static int quinoa = 10; static int tulip = 11; static int pea = 12; static int soy = 13;
+static int faba = 14; static int basil = 15;
+static String[] speciesNames = {"dicot1","dicot2","chenopodium","at","cereal","grass","hemp","weed",
+									"sunflower","maize","quinoa","tulip","pea","soy","faba","basil"};	// species names to be used in output
+static int totalSpecies	= speciesNames.length;						// total number of species defined
+
+// general
+static boolean showLabels		= false;		// show text labels with leaves and organs indicating fraction of potential biomass
+static boolean sRFR				= false;		// toggle PAR or R:FR visualisation (default value for swColor() method)
+static boolean snapShot			= true;			// take snapshots?
+static String path				= "{{output_path}}/";	// location for the snapshots
+static String pathData			= "{{output_path}}/";	// location for the output text files
+
+static boolean writePlantTable	= true;			// true: write plant-level tables
+static boolean writeFieldTable	= true;			// true: write field-level tables
+static boolean writeLight		= false;		// true: record tile and sensor light variable (only for plant-independent tiles)
+
+// field parameters
+static int[] speciesSequence	= {{'{'}}{{crop_type}}{{'}'}};		// sequence of species in adjacent strips (nr of values determines nr of strips)
+static double stripDistance		= 0;			// extra distance between adjacent strips (THIS EXTRA AREA IS NOT INCLUDED IN THE CALCULATION OF STRIP BIOMASS OR YIELD)
+	// checkerboard
+static boolean checker			= false;		// true: primary species is placed in a checkerboard design with a second species (checkerSpecies)
+static int checkerSpecies		= tulip;			// the second species in the checkboard design
+static int checkerSize			= 1;			// size of checkerboard unit (e.g.: 3 would give units of 3x3 plants arranged in a checkboard design
+	// mixtures
+static boolean mix				= false;		// true: primary species is mixed with a second species (mixSpecies) according to a proporionality (mixProp)
+static int mixSpecies			= tulip;			// the second species in the mix
+static double mixProp			= 0.5;			// the proporion of the primary species in the mix
+	// randomization
+static boolean randomArrangement = false;		// overrule plant arrangement and fully randomize plant location in strip
+
+// root and soil parameters
+static boolean rootModule		= false;		// toggle root and soil simulation. If false, roots are present only as a simple sink for assimilates	
+static double soilN				= 1000;			// uMol N / L soil
+static double soilP				= 50; 			// uMol N / L soil
+static double cellSize			= 0.2;			// size of a cubical soil cell (m*m*m); should fit within field size chosen e.g. field length and width should be divisible by cellsize!
+static double N_UptakeRadius	= 0.03;			// N uptake radius in m
+static double P_UptakeRadius	= 0.002;		// P uptake radius in m; 0.001 for short root hairs, 0.002 for long root hairs, see Gahoonia & Nielsen 1997
+static double N_Cmin_r			= 2;			// Minimum N concentration required for root uptake, uMol/L (York 2016)
+static double P_Cmin_r			= 1.2;			// Minimum P concentration required for root uptake, uMol/L (Silveira 2004) 
+static double fN				= 0.1;			// fraction of N to be allocated to roots for their growth
+
+// weed parameters
+static boolean weeds			= false;		// true: weeds grow according to parameters below
+static double weedDens			= 30;			// density of weeds (per m2)
+static int weedSpecies			= cheno;			// which species# should represent the weed
+static int nrWeedPlants;
+
+// general plant settings
+static boolean functional		= true;			// false: structural model only (light is intercepted but not used for growth)
+static boolean plantDeath		= false;		// toggle possibilities for entire plants to taken from the scene in case of very low source/sink ratio
+static boolean leafSenescence	= false;			// toggles falling of leaves at end of life span or when light level at leaf is low
+static double fallPAR 			= 25;			// light level (umol/m2/s) below which leaf should drop
+static boolean FvCB				= true;			// true: use biochemical photosynthesis model; false: use light response curve
+static int timeToFlower			= 60;			// TO BE MADE A FUNCTION OF DAYLENGTH OR OTHER ENVIRONMENTAL VARIABLE
+
+// light model options
+static double rfrIncoming		= 1.2;			// red/far-red ratio of the incoming radiation
+static int depth				= 10;			// maximum number of reflections / transmissions of a ray
+static LightModel lm			= new LightModel(5000000, depth);
+static FluxLightModel flm		= new FluxLightModel(20000000, depth);
+static boolean seeRays			= false;		// see direction of rays from light sources if true
+static boolean infinite			= true;			// clone the canopy to eliminate border effects
+static int nrClones				= 10;			// number of cloned canopies in x and y direction
+static boolean flux				= false;		// true: use FluxLightModel, false: use LightModel
+static double reflectancePAR		= 0.1;		// reflectance of PAR by leaves and stem
+static double transmittancePAR		= 0.03;		// transmittance of PAR by leaves
+static double reflectanceRed		= 0.05;		// reflectance of red light by leaves and stem
+static double transmittanceRed		= 0.03;		// transmittance of red light by leaves
+static double reflectanceFarRed		 = 0.4;		// reflectance of far-red light by leaves and stem
+static double transmittanceFarRed	= 0.45;		// transmittance of far-red light by leaves
+
+// environmental settings
+const float latitude 			= 52 * Math.PI/180;	// the latitude of location of the scene
+static int startingDayOfYear	= 90;				// overall starting simulation day of year
+static double Ca				= 400;				// atmospheric CO2 level
+static double VPD				= 1;				// vapour pressure deficit
+static double O2				= 210;				// oxygen level
+
+// tile light sensors
+static boolean iTile				= false;		// true: use plant-independent tiles;
+ // plant-associated tiles
+static int nrTiles					= 1;		// nr tiles per plant per edge (e.g. nrTiles=3 means 3*3=9 tiles per plant)
+ // plant-independent tiles
+static double offSetX				= 0.1;		// x location of tile 1 with respect to plant 1
+static double offSetY				= 0.25;		// y location of tile 1 with respect to plant 1
+static int nrX						= 6;		// number of tiles in x direction
+static int nrY						= 10;		// number of tiles in y direction
+static int nrZ						= 1;		// number of associated sensors in z direction (height)
+static double tSizeX				= 0.1;		// width of tile
+static double tSizeY				= 0.1;		// length of tile
+static double tSizeZ				= 0.1;		// height of sensor
+
+//view layers
+static int leafLayer			= 3;			// layer in which to show the leaves
+static int rootLayer			= 14;
+static int rootBoxLayer			= 13;
+static int tileLayer			= 12;
+
+// timers
+static int halt;							// time at which simulation should stop irrespective of any harvests
+static int nrSims 				= 1;//21;		// total number of simulations (treatments times runs per treatment
+static int sims;							// keeps track of the total number of simulations
+static int time;							// in days
+static double tt;							// thermal time in degree days
+static int dayOfYear;					// day in the year
+static boolean end;
+
+// field parameters per species
+static int[] nrRows				= new int[totalSpecies];		// number of rows
+static int[] nrPlants			= new int[totalSpecies];		// number of plants in a row
+static double[] rowDistance		= new double[totalSpecies];		// distance between rows
+static double[] plantDistance	= new double[totalSpecies];		// distance between plants in a row
+static int[] delay				= new int[totalSpecies];		// germination delay after start of simulation (in days, to represent late sowing)
+static int[] harvest			= new int[totalSpecies];		// duration, i.e. harvest/removal time after emergence (in days)
+static boolean[] hexa			= new boolean[totalSpecies];	// true: hexagonal layout, rectangular otherwise
+static double[] offspotIntraRow	= new double[totalSpecies];		// fraction of plant distance the plant seed is off-spot
+static double[] offspotInterRow	= new double[totalSpecies];		// fraction of row distance the plant seed is off-spot
+
+// plant shoot parameters 
+static boolean[] determinate	= new boolean[totalSpecies];	// TRUE = determinate, FALSE = indeterminate
+static double[] plastochron		= new double[totalSpecies];		// time between creation of two phytomers (dd)
+static double[] phyllochron		= new double[totalSpecies];		// time between appearance of two leaves (dd)
+static int[] finalPhytNum	= new int[totalSpecies];		// final number of main stem vegetative phytomers
+static int[] nrShortInternodes	= new int[totalSpecies];		// number of bottom internodes that should not elongate 
+
+static double[] wmaxRoot		= new double[totalSpecies];		// maximum root system biomass
+static double[] wmaxFlower		= new double[totalSpecies];		// maximum flower/fruit biomass
+static double[] wmaxInt			= new double[totalSpecies];		// maximum internode biomass
+static double[] wmaxLeaf		= new double[totalSpecies];		// maximum leaf biomass
+static double[] teRoot			= new double[totalSpecies];		// root growth duration
+static double[] teFlower		= new double[totalSpecies];		// flower/fruit growth duration
+static double[] teInt			= new double[totalSpecies];		// internode growth duration
+static double[] teLeaf			= new double[totalSpecies];		// leaf growth duration
+
+static double[] maxWidthInt		= new double[totalSpecies];		// maximum internode width
+static double[] specificInternodeLength = new double[totalSpecies];	// internode ratio length / biomass (mm/mg)
+
+static double[] amax			= new double[totalSpecies];		// max photosynthesis rate
+static double[] eff				= new double[totalSpecies];		// initial light use efficiency (initial slope of light response curve)
+static boolean[] C4				= new boolean[totalSpecies];	// false: C3, true: C4 (parameter only valid when FvCB is true)
+static double[] nitro			= new double[totalSpecies];		// leaf nitrogen mass fraction at top of canopy
+
+static double[] LMA				= new double[totalSpecies];		// leaf mass per unit area (mg / cm2)
+static double[] leafLife		= new double[totalSpecies];		// life span of a leaf since appearance (expressed as X times its growth duration (te))
+static double[] lwRatio			= new double[totalSpecies];		// ratio between leaf blade length and width
+static double[] maxWidth		= new double[totalSpecies];		// location on the leaf where width is maximal (fraction of length)
+static double[] shapeCoeff		= new double[totalSpecies];		// leaf shape coefficient (0 = rectangular, high value = pinched)
+static double[] leafCurve		= new double[totalSpecies];		// leaf curvature - angle between bottom and top of leaf blade (0 = flat)
+
+static int[] rankLower			= new int[totalSpecies];		// final phtyomer that has properties of lower phytomers (e.g. nr of leaflets, leaf angle, etc) 
+
+static double[] leafAngleLower		= new double[totalSpecies];		// insertion angle of lower leaves (90 = horizontal)
+static double[] leafAngleUpper		= new double[totalSpecies];		// insertion angle of upper leaves (90 = horizontal)
+
+static int[] nrLeafletsLower		= new int[totalSpecies];		// number of leaflets per leaf for the lower phytomers
+static int[] nrLeafletsUpper		= new int[totalSpecies];		// number of leaflets per leaf for the upper phytomers
+static double[] petioleFraction =  new double[totalSpecies];	// fraction of biomass partitioned to the petiole
+static double[] petioluleFraction =  new double[totalSpecies];	// fraction of biomass partitioned to the petiolule
+static double[] specificPetioleLength = new double[totalSpecies];// specific petiole length (mm/mg)
+static double[] specificPetioluleLength = new double[totalSpecies];// specific petiolule length (mm/mg)
+
+static int[] nrLeavesLower		= new int[totalSpecies];		// number of leaves per phytomer for the lower phytomers
+static int[] nrLeavesUpper		= new int[totalSpecies];		// number of leaves per phytomer for the upper phytomers
+static double[] phyllotaxisLower = new double[totalSpecies];	// angle between consecutive leaves along a stem for the lower phytomers
+static double[] phyllotaxisUpper = new double[totalSpecies];	// angle between consecutive leaves along a stem the upper phytomers
+
+static int[] varDelay			= new int[totalSpecies];		// max variation in germination delay (in days, 0 = simultaneous germination)
+static double[] seedMass		= new double[totalSpecies];		// seed endosperm mass in mg
+
+static boolean[] SASextend		= new boolean[totalSpecies];	// toggle internode SAS extention response
+
+static boolean[] branching		= new boolean[totalSpecies];	// toggle branching
+static boolean[] tillersOnly	 = new boolean[totalSpecies];	// true: bud break only if parent internode has length 0 (= tillering)
+static double[] dominance		= new double[totalSpecies];		// minimum dominance, so maximal branching phytomer distance, at infinitely large source/sink ratio (no neighbours)
+static double[] srAbortThresh	= new double[totalSpecies];		// threshold sink/source ratio for branch abortion
+
+static double[] tb				= new double[totalSpecies];		// base temperature for thermal time calculation
+
+// plant root parameters
+static double[] EL				= new double[totalSpecies];				// Root elongation rate mm mm-1 day-1 
+static double[] Dinit			= new double[totalSpecies];				// Initial root Diameter in m 
+static double[] RTD				= new double[totalSpecies];				// Root tissue density (g/cm3) (Pages 2013 - generic)
+static int[] MP					= new int[totalSpecies];				// Maximum number of root primordia 
+static double[] ER				= new double[totalSpecies];				// Emergence rate of root primordia per day = 0.968 at 25 degrees which is 0.056 per dregreeday.
+static double[] IBD	 			= new double[totalSpecies];				// Inter Branch Distance (Pages 2013 - Pea)
+static double[] IBDmax			= new double[totalSpecies];				// Inter branch distance of the highest root order 
+static double[] RZone			= new double[totalSpecies];				// No lateral zone in m 
+static double[] RDM0			= new double[totalSpecies];				// Ratio Daughter Mother Diameter primary-secondary 
+static double[] RDM1			= new double[totalSpecies];				// Ratio Daughter Mother Diameter secondary-tertiary
+static double[] sdD				= new double[totalSpecies];				// Standard deviation diameter for RDM 
+static double[] angleAVG		= new double[totalSpecies];				// average insertion angle of lateral roots
+static double[] angleVAR		= new double[totalSpecies];				// variation in the insertion angle of lateral roots
+static double[] MCP				= new double[totalSpecies];				//random root movement based on mechanical constraints; radial degrees/m
+static int[] MaxRootOrder		= new int[totalSpecies];	
+static double[] fineRootD		= new double[totalSpecies];				// Diameter in m/m
+static double[] fineRootDensity	= new double[totalSpecies];				// // ratio of biomass allocation to absorptive/transport roots	
+static double[] RLratio			= new double[totalSpecies];				// Root/Leaf ratio
+static double[] fMyc			= new double[totalSpecies];				// +MF 0.00005
+static double[] Groot			= new double[totalSpecies];				// Base rate of Gravitropism 
+
+// derived parameters
+static int nrSpecies;										// number of plant species in the scene
+static boolean[] spPresence		= new boolean[totalSpecies];// true or false for each species defined; true = present in scene
+static int nrStrips				= speciesSequence.length;			// total number of strips in the field
+static long globalTotalPlants;								// total number of plants in the scene
+static long[] totalPlants		= new long[totalSpecies];	// total number of plants per species
+static double[] area			= new double[totalSpecies];	// total ground area per species       
+static double totalArea;									// total ground area for the whole scene
+static double[] dens			= new double[totalSpecies];	// population density (plants / m2) per species
+static double[] overallDens		= new double[totalSpecies]; // population density per m2 of total intercrop area
+static double[] relDens			= new double[totalSpecies];	// relative population density (plants / m2) per species
+static double maxPlantDist;									// maximum plantDistance of all species in the field
+static void calcNrSpecies() {
+	nrSpecies = 0;
+	for (int i=0; i <= nrStrips-1; i++) {
+		spPresence[speciesSequence[i]] = true;			// set presence to true per species if present in scene
+	}
+	if (weeds == true) {
+		spPresence[weedSpecies] = true;			// if weeds are present, also set true for the weed species
+	}
+	if (checker == true) {
+		spPresence[checkerSpecies] = true;		// if design is checkerboard, also set true for the 2nd species in the design
+	}
+	if (mix == true) {
+		spPresence[mixSpecies] = true;		// if design is mixed, also set true for the 2nd species in the design
+	}
+	for (int j=0; j <= totalSpecies-1; j++) {
+		if (spPresence[j] == true) {
+			nrSpecies++;						// count number of species present (count the 'trues' in spPresence)
+		}
+	}	
+	for (int j=0; j <= totalSpecies-1; j++) {
+		if (spPresence[j] == true) {
+			if (plantDistance[j] > maxPlantDist) {
+				maxPlantDist = plantDistance[j];
+			}
+		}
+	}
+}
+
+
+static void calcHalt() {
+	for (int j=0; j <= totalSpecies-1; j++) {
+		if (spPresence[j] == true) {
+			int h = delay[j]+harvest[j]-1;
+			if (h > halt) {halt = h;}
+		}
+	}
+}
+static double[] stripLength	= new double[totalSpecies];
+static double[] stripWidth	= new double[totalSpecies];
+static double longestStripLength;	// needed to determine size of the GridCloner
+static double fieldWidth;	
+static double originX;				// X and Y coordinates of the field origin 
+static double originY;	
+const Phong LightShader			= new Phong().(setDiffuse(new RGBColor(reflectancePAR,reflectanceRed,reflectanceFarRed)), setDiffuseTransparency(new RGBColor(transmittancePAR,transmittanceRed,transmittanceFarRed)));
+const Phong LightOpaqueShader	= new Phong().(setDiffuse(new RGBColor(reflectancePAR+transmittancePAR,reflectanceRed+transmittanceRed,reflectanceFarRed+transmittanceFarRed)), setDiffuseTransparency(new RGBColor(0,0,0)));
+static double absorbancePAR		= 1 - reflectancePAR - transmittancePAR;
+static double absorbanceRed		= 1 - reflectanceRed - transmittanceRed;
+static double absorbanceFarRed	= 1 - reflectanceFarRed - transmittanceFarRed;
+static double cm				= 1 + rfrIncoming + 1;
+
+// simulation time measurement
+static double start;						// starting system time (ms)
+static double stop;							// stopping system time (ms)
+static double realTime;						// simulation running time (s)
+static double simRate;						// current rate of simulation (model time step per second)
+static double avgRate;						// average rate of simulation (model time step per second)
+static void calcSimTime() {
+	if (time==0) {start = System.currentTimeMillis();}
+	double prev = realTime;
+	realTime = (System.currentTimeMillis() - start)/1000;
+	simRate = 0.01*Math.round(100/(realTime - prev));
+	if (time>0) {simulationRate.getRow(time).(set(0,simRate));}
+}
+
+// species-specific geometry parameterization
+const Shader sunflowerTexture = shader("sunflower");
+const Shader sunflowerBackTexture = shader("sunflowerBack");
+const Shader leafStripes = shader("Lambert 2");
+const Shader earTexture = shader("ear");
+const Shader earTextureBW = shader("earBW");
+const Shader earTextureRed = shader("Lambert");
+const Shader quinoaSpikeTexture = shader("quinoaSpike");
+const Shader maizeSpikeTexture = shader("maizeSpike");
+const Shader tulipFlowerTexture = shader("Lambert 3");
+const Shader tulipClosedFlowerTexture = shader("Lambert 4");
+
+module FlowerShape(int species, double biomass, double frBio, double rotation) ==> 
+if (species == cereal || species == grass) (
+		for (1:2) (
+			{
+				double a[] = {0,0,0,0,25000,3750,11250};		// conversion factors from biomass to ear size
+				double b[] = {0,0,0,0,125000,60000,180000};
+			}
+			[Parallelogram(biomass/a[species],biomass/b[species]).(setLayer(0), setShader(sRFR?earTextureRed:earTexture))]
+			RH(90)
+		)
+		Translate(0,0,biomass/200000) if (showLabels) (TextLabel(frBio))
+	) else if (species == cheno || species == quinoa) (
+		[Parallelogram(biomass/300000,biomass/750000).(setShader(quinoaSpikeTexture))]
+		RH(90)
+		[Parallelogram(biomass/300000,biomass/750000).(setShader(quinoaSpikeTexture))]
+	) else if (species == sunflower) (
+		RH(-rotation)RL(-15)
+		[Parallelogram(biomass/300000,biomass/300000).(setShader(sunflowerTexture))]
+		Translate(0,0.001,0)
+		[Parallelogram(biomass/300000,biomass/300000).(setShader(sunflowerBackTexture))]
+	) else if (species == maize) (
+		[Parallelogram(biomass/400000,biomass/1200000).(setShader(maizeSpikeTexture))]
+		RH(90)
+		[Parallelogram(biomass/400000,biomass/1200000).(setShader(maizeSpikeTexture))]
+	) else if (species == tulip) (
+		if (frBio < 0.5) (
+			[Parallelogram(biomass/3000,biomass/6000).(setShader(tulipClosedFlowerTexture))]
+			RH(90)
+			[Parallelogram(biomass/3000,biomass/6000).(setShader(tulipClosedFlowerTexture))]		
+		) else (
+			[Parallelogram(biomass/3000,biomass/4000).(setShader(tulipFlowerTexture))]
+			RH(90)
+			[Parallelogram(biomass/3000,biomass/4000).(setShader(tulipFlowerTexture))]
+		)
+	) else if (species == at) (
+		Translate(0,0,biomass/1000000) M(biomass/50000) Sphere(biomass/100000).(setLayer(0), setShader(WHITE))
+		Translate(0,0,biomass/1000000) if (showLabels) (TextLabel(frBio))
+	) else if (species == faba) (
+		Translate(0,0,biomass/1000000) M(biomass/50000) Sphere(biomass/100000).(setLayer(0), setShader(WHITE))
+		Translate(0,0,biomass/1000000) if (showLabels) (TextLabel(frBio))
+	) else (
+		Translate(0,0,biomass/1000000) M(biomass/50000) Sphere(biomass/100000).(setLayer(0), setShader(WHITE))
+		Translate(0,0,biomass/1000000) if (showLabels) (TextLabel(frBio))
+	)
+;                                                   
+
+// datasets
+const DatasetRef fieldOutput = new DatasetRef("Field-level output");
+const DatasetRef plantOutput = new DatasetRef("Plant-level output");
+
+const DatasetRef laidata = new DatasetRef("Leaf area index");
+const DatasetRef fieldFabs = new DatasetRef("Field fPAR");
+const DatasetRef fieldAssim = new DatasetRef("Field assimilated CO2");
+const DatasetRef fieldBiomass = new DatasetRef("Field biomass");
+const DatasetRef fieldYield = new DatasetRef("Field yield");
+const DatasetRef fieldRFR = new DatasetRef("Field RFR");
+
+const DatasetRef lightTransectX =  new DatasetRef("Light Transect X");
+const DatasetRef lightTransectY =  new DatasetRef("Light Transect Y");
+const DatasetRef combiLight = new DatasetRef("Tile and sensor light");
+
+const DatasetRef leafAreaProfile = new DatasetRef("Leaf area profile");
+const DatasetRef internodeLengthProfile = new DatasetRef("Internode length profile");
+const DatasetRef leafLightProfile = new DatasetRef("Leaf light profile");
+const DatasetRef leafNProfile = new DatasetRef("Leaf N profile");
+
+const DatasetRef plantLeafArea = new DatasetRef("Plant Leaf Area (m2)");
+const DatasetRef plantHeight = new DatasetRef("Plant Height (m)");
+const DatasetRef apicalDominance = new DatasetRef("Apical Dominance");
+const DatasetRef plantBranches = new DatasetRef("Branch number");
+const DatasetRef plantSAS = new DatasetRef("SAScoefficient");
+const DatasetRef plantFabs = new DatasetRef("Plant fPAR");
+const DatasetRef plantCPAR = new DatasetRef("Plant Accumulated PAR (mol)");
+const DatasetRef plantRFR = new DatasetRef("Plant R:FR");
+const DatasetRef plantNitro = new DatasetRef("Plant N uptake");
+const DatasetRef plantNitroTotal = new DatasetRef("Total plant N uptake");
+const DatasetRef plantNitroRatio = new DatasetRef("Plant N source/sink ratio");
+const DatasetRef plantRootLength = new DatasetRef("Plant root length(m)");
+const DatasetRef sourceSink = new DatasetRef("Plant source/sink ratio");
+const DatasetRef photo = new DatasetRef("Plant daily photosynthesis (mmol)");
+const DatasetRef reserves = new DatasetRef("Plant substrate reserves (g)");
+const DatasetRef plantYield = new DatasetRef("Plant yield (g)");
+const DatasetRef plantBiomass = new DatasetRef("Plant Biomass (g)");
+const DatasetRef simulationRate = new DatasetRef("Simulation rate (steps/s)");
+
+// gaussian integration for a range of orders, taken from Diurnal project
+class OrderNotDefined extends Exception {
+   public OrderNotDefined(String msg){
+      super(msg);
+   }
+}
+{% raw -%}
+static double[][] gaussLegendre(int n) {
+	switch(n) {
+		case 3: return new double[][]{{0.4444444, 0.2777778, 0.2777778}, 
+									  {0.5000000, 0.1127017, 0.8872983}};
+		case 5: return new double[][]{{0.2844445, 0.2393144, 0.2393144, 0.1184634, 0.1184634}, 
+									  {0.50000000, 0.23076534, 0.76923466, 0.04691008, 0.95308992}};
+		case 10: return new double[][]{{0.147762112357376, 0.147762112357376, 0.134633359654998, 0.134633359654998, 0.109543181257991, 0.109543181257991, 0.0747256745752903, 0.0747256745752903, 0.0333356721543441, 0.0333356721543441}, 
+									   {0.425562830509184, 0.574437169490816, 0.283302302935376, 0.716697697064624, 0.160295215850488, 0.839704784149512, 0.0674683166555077, 0.932531683344492, 0.0130467357414141, 0.986953264258586}};
+		case 15: return new double[][]{{0.101289120962781, 0.0992157426635558, 0.0992157426635558, 0.0930805000077811, 0.0930805000077811, 0.083134602908497, 0.083134602908497, 0.0697853389630772, 0.0697853389630772, 0.053579610233586, 0.053579610233586, 0.0351830237440541, 0.0351830237440541, 0.0153766209980586, 0.0153766209980586}, 
+									   {0.5, 0.399402953001283, 0.600597046998717, 0.302924326461218, 0.697075673538782, 0.214513913695731, 0.785486086304269, 0.137791134319915, 0.862208865680085, 0.0758967082947864, 0.924103291705214, 0.031363303799647, 0.968636696200353, 0.00600374098975731, 0.993996259010243}};
+		case 20: return new double[][]{{0.0763766935653629, 0.0763766935653629, 0.0745864932363019, 0.0745864932363019, 0.071048054659191, 0.071048054659191, 0.0658443192245883, 0.0658443192245883, 0.0590972659807592, 0.0590972659807592, 0.0509650599086202, 0.0509650599086202, 0.0416383707883524, 0.0416383707883524, 0.0313360241670545, 0.0313360241670545, 0.0203007149001935, 0.0203007149001935, 0.00880700356957606, 0.00880700356957606}, 
+									   {0.461736739433251, 0.538263260566749, 0.386107074429177, 0.613892925570823, 0.31314695564229, 0.68685304435771, 0.244566499024586, 0.755433500975414, 0.181973159636742, 0.818026840363258, 0.126834046769925, 0.873165953230075, 0.0804415140888906, 0.919558485911109, 0.043882785874337, 0.956117214125663, 0.0180140363610431, 0.981985963638957, 0.00343570040745256, 0.996564299592547}};
+		case 25: return new double[][]{{0.0615880268633577, 0.061121221495155, 0.061121221495155, 0.0597278817678924, 0.0597278817678924, 0.0574291295728558, 0.0574291295728558, 0.0542598122371318, 0.0542598122371318, 0.0502679745335253, 0.0502679745335253, 0.0455141309914818, 0.0455141309914818, 0.0400703501675005, 0.0400703501675005, 0.0340191669061785, 0.0340191669061785, 0.0274523479879176, 0.0274523479879176, 0.0204695783506532, 0.0204695783506532, 0.0131774933075161, 0.0131774933075161, 0.00569689925051314, 0.00569689925051314}, 
+									   {0.5, 0.438567653694645, 0.561432346305355, 0.378066558139506, 0.621933441860494, 0.319413847095306, 0.680586152904694, 0.263498634277142, 0.736501365722858, 0.211168534879389, 0.788831465120611, 0.163216815763266, 0.836783184236734, 0.120370368481321, 0.879629631518679, 0.083278685619583, 0.916721314380417, 0.0525040010608623, 0.947495998939138, 0.0285127143855128, 0.971487285614487, 0.0116680392702412, 0.988331960729759, 0.00222151510475094, 0.997778484895249}};	
+		case 30: return new double[][]{{0.0514263264467794, 0.0514263264467794, 0.0508811948742027, 0.0508811948742027, 0.0497967102933976, 0.0497967102933976, 0.0481843685873221, 0.0481843685873221, 0.0460612611188931, 0.0460612611188931, 0.0434498936005415, 0.0434498936005415, 0.0403779476147101, 0.0403779476147101, 0.0368779873688526, 0.0368779873688526, 0.0329871149410902, 0.0329871149410902, 0.0287465781088095, 0.0287465781088095, 0.024201336415297, 0.024201336415297, 0.0193995962848135, 0.0193995962848135, 0.0143923539416617, 0.0143923539416617, 0.00923323415554548, 0.00923323415554548, 0.0039840962480833, 0.0039840962480833}, 
+									   {0.474264078722341, 0.525735921277659, 0.423065043195708, 0.576934956804292, 0.372681536916055, 0.627318463083945, 0.323647637234561, 0.676352362765439, 0.276483115230955, 0.723516884769045, 0.23168792592899, 0.76831207407101, 0.189736908505379, 0.810263091494621, 0.151074752603342, 0.848925247396658, 0.116111283947587, 0.883888716052413, 0.0852171188086158, 0.914782881191384, 0.0587197321039736, 0.941280267896026, 0.0368999762853628, 0.963100023714637, 0.0199890675158462, 0.980010932484154, 0.00816593836012641, 0.991834061639874, 0.00155325796267525, 0.998446742037325}};
+		case 35: return new double[][]{{0.0442433974535521, 0.0440702652151377, 0.0440702652151377, 0.0435522234985918, 0.0435522234985918, 0.0426933266960496, 0.0426933266960496, 0.0415002968644283, 0.0415002968644283, 0.0399824711211621, 0.0399824711211621, 0.038151728577721, 0.038151728577721, 0.03602239738628, 0.03602239738628, 0.0336111426345434, 0.0336111426345434, 0.0309368359830401, 0.0309368359830401, 0.0280204081061851, 0.0280204081061851, 0.0248846852006768, 0.0248846852006768, 0.0215542111630851, 0.0215542111630851, 0.0180550579317317, 0.0180550579317317, 0.0144146300544471, 0.0144146300544471, 0.0106614899557418, 0.0106614899557418, 0.00682541417418075, 0.00682541417418075, 0.00294171671022154, 0.00294171671022154}, 
+									   {0.5, 0.45581432836217, 0.54418567163783, 0.411974469417005, 0.588025530582995, 0.368823529395352, 0.631176470604648, 0.326699222784593, 0.673300777215407, 0.285931229241093, 0.714068770758907, 0.246838613379256, 0.753161386620744, 0.209727327625118, 0.790272672374882, 0.174887817667055, 0.825112182332945, 0.142592749221686, 0.857407250778314, 0.113094873856544, 0.886905126143456, 0.0866250504538873, 0.913374949546113, 0.0633904374873888, 0.936609562512611, 0.0435728693203412, 0.956427130679659, 0.0273274258960863, 0.972672574103914, 0.0147811919803851, 0.985218808019615, 0.00603211777807428, 0.993967882221926, 0.00114671545019984, 0.9988532845498}};		
+		case 40: return new double[][]{{0.0387529739892124, 0.0387529739892124, 0.038519909082124, 0.038519909082124, 0.0380551809503131, 0.0380551809503131, 0.0373615845289841, 0.0373615845289841, 0.036443291197902, 0.036443291197902, 0.0353058236956434, 0.0353058236956434, 0.0339560229076169, 0.0339560229076169, 0.0324020067283005, 0.0324020067283005, 0.0306531212464645, 0.0306531212464645, 0.0287198845496958, 0.0287198845496958, 0.0266139234919684, 0.0266139234919684, 0.0243479038175361, 0.0243479038175361, 0.0219354540928366, 0.0219354540928366, 0.019391083987236, 0.019391083987236, 0.0167300976412739, 0.0167300976412739, 0.0139685034900117, 0.0139685034900117, 0.0111229245970835, 0.0111229245970835, 0.00821052919095394, 0.00821052919095394, 0.00524914226557641, 0.00524914226557641, 0.0022606385492666, 0.0022606385492666}, 
+									   {0.480613791246975, 0.519386208753025, 0.441957964662372, 0.558042035337628, 0.403651209649314, 0.596348790350686, 0.365923907496373, 0.634076092503627, 0.329002954587121, 0.670997045412879, 0.293110397814198, 0.706889602185802, 0.258462099156911, 0.741537900843089, 0.225266437452436, 0.774733562547564, 0.19372305516601, 0.80627694483399, 0.16402165769291, 0.83597834230709, 0.136340872405036, 0.863659127594964, 0.11084717428674, 0.88915282571326, 0.0876938845833442, 0.912306115416656, 0.0670202483938703, 0.93297975160613, 0.0489505965155628, 0.951049403484437, 0.0335935958606617, 0.966406404139338, 0.0210415903931042, 0.978958409606896, 0.0113700250081128, 0.988629974991887, 0.00463688065027151, 0.995363119349729, 0.000881145144720374, 0.99911885485528}};		
+		case 45: return new double[][]{{0.034520912414616, 0.0344386584888307, 0.0344386584888307, 0.0341922886893348, 0.0341922886893348, 0.0337829770818038, 0.0337829770818038, 0.0332126742249213, 0.0332126742249213, 0.0324840978753617, 0.0324840978753617, 0.03160072003691, 0.03160072003691, 0.0305667504155333, 0.0305667504155333, 0.0293871163594209, 0.0293871163594209, 0.0280674393798932, 0.0280674393798932, 0.0266140083656345, 0.0266140083656345, 0.025033749618976, 0.025033749618976, 0.0233341938591867, 0.0233341938591867, 0.0215234403545825, 0.0215234403545825, 0.0196101183646512, 0.0196101183646512, 0.0176033461008045, 0.0176033461008045, 0.0155126874672577, 0.0155126874672577, 0.0133481069837888, 0.0133481069837888, 0.0111199237752894, 0.0111199237752894, 0.00883876762896879, 0.00883876762896879, 0.00651555249579139, 0.00651555249579139, 0.00416159464810912, 0.00416159464810912, 0.00179133157764178, 0.00179133157764178}, 
+									   {0.5, 0.465506509918428, 0.534493490081572, 0.431177397008373, 0.568822602991627, 0.397176255108368, 0.602823744891632, 0.363665115123811, 0.636334884876189, 0.330803672874699, 0.669196327125301, 0.298748528070729, 0.701251471929271, 0.267652438040182, 0.732347561959818, 0.237663589768542, 0.762336410231458, 0.208924893715323, 0.791075106284677, 0.181573302773388, 0.818426697226612, 0.1557391596144, 0.8442608403856, 0.131545575527255, 0.868454424472745, 0.109107843703047, 0.890892156296953, 0.0885328897489568, 0.911467110251043, 0.0699187620196679, 0.930081237980332, 0.0533541641233791, 0.946645835876621, 0.0389180316404998, 0.9610819683595, 0.0266791545021854, 0.973320845497815, 0.0166958448015527, 0.983304155198447, 0.00901564248272974, 0.99098435751727, 0.00367500077639815, 0.996324999223602, 0.000698177409031664, 0.999301822590968}};	
+		case 50: return new double[][]{{0.0310883083276736, 0.0310883083276736, 0.0309680337103416, 0.0309680337103416, 0.0307279497951583, 0.0307279497951583, 0.0303689854208851, 0.0303689854208851, 0.0298925293521327, 0.0298925293521327, 0.0293004249066112, 0.0293004249066112, 0.0285949628238642, 0.0285949628238642, 0.0277788724031063, 0.0277788724031063, 0.0268553109444981, 0.0268553109444981, 0.0258278515347906, 0.0258278515347906, 0.0247004692247332, 0.0247004692247332, 0.0234775256519742, 0.0234775256519742, 0.0221637521694016, 0.0221637521694016, 0.0207642315450738, 0.0207642315450738, 0.0192843783062938, 0.0192843783062938, 0.0177299178075731, 0.0177299178075731, 0.016106864111789, 0.016106864111789, 0.0144214967902676, 0.0144214967902676, 0.0126803367850062, 0.0126803367850062, 0.0108901215850624, 0.0108901215850624, 0.0090577803567447, 0.0090577803567447, 0.00719041138074279, 0.00719041138074279, 0.00529527419182548, 0.00529527419182548, 0.0033798995978727, 0.0033798995978727, 0.00145431127657757, 0.00145431127657757}, 
+									   {0.484450830836406, 0.515549169163594, 0.453412649219957, 0.546587350780043, 0.422554705000927, 0.577445294999073, 0.391996381561979, 0.608003618438021, 0.361855903110234, 0.638144096889766, 0.332249877290281, 0.667750122709719, 0.303292844051217, 0.696707155948783, 0.275096832512981, 0.724903167487019, 0.247770927546268, 0.752229072453732, 0.221420847742675, 0.778579152257325, 0.196148536407525, 0.803851463592475, 0.17205176715728, 0.82794823284272, 0.149223765646589, 0.850776234353411, 0.127752848886966, 0.872247151113034, 0.1077220835498, 0.8922779164502, 0.089208964570332, 0.910791035429668, 0.072285115285027, 0.927714884714973, 0.0570160102381935, 0.942983989761807, 0.0434607216721041, 0.956539278327896, 0.031671690527561, 0.968328309472439, 0.021694522378596, 0.978305477621404, 0.013567807446654, 0.986432192553346, 0.00732295797599708, 0.992677042024003, 0.00298401528395464, 0.997015984716045, 0.00056679778996449, 0.999433202210036}};	
+		case 55: return new double[][]{{0.0283014882222802, 0.028256159124886, 0.028256159124886, 0.0281203170355422, 0.0281203170355422, 0.027894397097642, 0.027894397097642, 0.0275791230012543, 0.0275791230012543, 0.0271755046649556, 0.0271755046649556, 0.0266848350008027, 0.0266848350008027, 0.026108685772816, 0.026108685772816, 0.025448902562247, 0.025448902562247, 0.0247075988557759, 0.0247075988557759, 0.0238871492756003, 0.0238871492756003, 0.0229901819731419, 0.0229901819731419, 0.0220195702108033, 0.0220195702108033, 0.0209784231588594, 0.0209784231588594, 0.0198700759371686, 0.0198700759371686, 0.0186980789339828, 0.0186980789339828, 0.0174661864367949, 0.0174661864367949, 0.0161783446130929, 0.0161783446130929, 0.0148386788825805, 0.0148386788825805, 0.0134514807281981, 0.0134514807281981, 0.0120211940048628, 0.0120211940048628, 0.0105524008340082, 0.0105524008340082, 0.00904980726036453, 0.00904980726036453, 0.00751822916675589, 0.00751822916675589, 0.00596258035992431, 0.00596258035992431, 0.00438787305352926, 0.00438787305352926, 0.00279931613328038, 0.00279931613328038, 0.00120416180998989, 0.00120416180998989}, 
+									   {0.5, 0.471713623090832, 0.528286376909168, 0.443517855970335, 0.556482144029665, 0.415503018176563, 0.584496981823437, 0.387758849676077, 0.612241150323923, 0.360374223399597, 0.639625776600403, 0.333436860554988, 0.666563139445012, 0.30703304962951, 0.69296695037049, 0.281247369981413, 0.718752630018587, 0.256162420906263, 0.743837579093737, 0.231858557045828, 0.768141442954172, 0.208413630986984, 0.791586369013016, 0.185902743875036, 0.814097256124964, 0.164398004840087, 0.835601995159913, 0.143968300006681, 0.856031699993319, 0.124679071825989, 0.875320928174011, 0.106592109436189, 0.893407890563811, 0.0897653507203395, 0.91023464927966, 0.0742526966914228, 0.925747303308577, 0.0601038387900523, 0.939896161209948, 0.047364099628, 0.952635900372, 0.0360742876396041, 0.963925712360396, 0.0262705659793946, 0.973729434020605, 0.0179843357034324, 0.982015664296568, 0.0112421322480054, 0.988757867751995, 0.00606552940055538, 0.993934470599445, 0.00247101107629405, 0.997528988923706, 0.000469290217590734, 0.999530709782409}};	
+		case 60: return new double[][]{{0.0259539388156103, 0.0259539388156103, 0.0258839715874551, 0.0258839715874551, 0.0257442257504905, 0.0257442257504905, 0.0255350780349278, 0.0255350780349278, 0.0252570922662547, 0.0252570922662547, 0.0249110178452751, 0.0249110178452751, 0.0244977877278784, 0.0244977877278784, 0.0240185159099856, 0.0240185159099856, 0.0234744944244561, 0.0234744944244561, 0.0228671898580572, 0.0228671898580572, 0.0221982393978936, 0.0221982393978936, 0.0214694464179678, 0.0214694464179678, 0.0206827756177924, 0.0206827756177924, 0.0198403477261904, 0.0198403477261904, 0.0189444337846217, 0.0189444337846217, 0.0179974490255423, 0.0179974490255423, 0.0170019463624732, 0.0170019463624732, 0.0159606095096482, 0.0159606095096482, 0.0148762457503945, 0.0148762457503945, 0.0137517783749624, 0.0137517783749624, 0.0125902388107606, 0.0125902388107606, 0.0113947584719989, 0.0113947584719989, 0.0101685603647286, 0.0101685603647286, 0.00891495050710386, 0.00891495050710386, 0.0076373092983924, 0.0076373092983924, 0.00633908323840798, 0.00633908323840798, 0.00502377859114399, 0.00502377859114399, 0.00369496558167273, 0.00369496558167273, 0.00235636496347678, 0.00235636496347678, 0.00101340598443688, 0.00101340598443688}, 
+									   {0.487020113849376, 0.512979886150624, 0.461095333025232, 0.538904666974768, 0.435275432301527, 0.564724567698472, 0.409630017563287, 0.590369982436713, 0.384228224311985, 0.615771775688015, 0.359138531288369, 0.640861468711631, 0.334428575865776, 0.665571424134224, 0.310164971711601, 0.689835028288399, 0.286413129208461, 0.713586870791539, 0.263237079119146, 0.736762920880853, 0.240699299970715, 0.759300700029285, 0.218860549623028, 0.781139450376972, 0.197779701475745, 0.802220298524255, 0.177513585755261, 0.822486414244739, 0.158116836309322, 0.841883163690678, 0.139641743322135, 0.860358256677865, 0.122138112346707, 0.877861887653293, 0.105653130033868, 0.894346869966132, 0.0902312369189271, 0.909768763081073, 0.0759140076070352, 0.924085992392965, 0.0627400386765509, 0.937259961323449, 0.050744844594977, 0.949255155405023, 0.0399607619111862, 0.960039238088814, 0.0304168619417884, 0.969583138058212, 0.0221388720800019, 0.977861127919998, 0.0151491056174736, 0.984850894382526, 0.0094663991237009, 0.990533600876299, 0.00510605238888912, 0.994893947611111, 0.00207973744058093, 0.997920262559419, 0.000394938386281962, 0.999605061613718}};
+		default: throw new OrderNotDefined("Gauss-Legendre integration of order " + n + " not defined");;
+	}
+	
+}
+{% endraw -%}
+
+static double colF(double f)	// to linearize the visualisation of fractions of absorbed radiation by leaves
+{
+	double k = 0.7;				// assumed light extinction coefficient for an average canopy
+	double maxLAI = 5.5;			// LAI value (as a function of canopy depth) above which color value equals 0 (black)
+	
+	return 1+Math.log(f)/(k*maxLAI);	// see LambertBeer_leaf_color.xlsx for derivation and example charts
+}
+
+
+
+/* method to generate random points on a half dome to represent random light sources according to a half-spherical distribution */
+/* implementation of R code by Wopke van der Werf from May 2020 */
+static double[] beta2;
+static double[] azimuth;
+static void calcLightSourceAngles()
+{
+	int N = 500;
+	double[] beta = new double[N];
+	for (int z=0; z < N; z++) {
+		double b = random(0,0.5*Math.PI); 
+		double r = random(0,1);
+		if (r <= Math.cos(b)) {
+			beta[z] = b * 180/Math.PI;
+		}
+	}
+
+	beta2 = compressArray(beta);
+	azimuth = new double[beta2.length];
+	for (int z=0; z < beta2.length; z++) {
+		double b = random(0,2*Math.PI); 
+		azimuth[z] = b * 180/Math.PI;
+	}	
+	
+}
+
+/* removes zero from array and shorten it accordingly */
+static double[] compressArray(double[] array)
+{
+	int targetIndex = 0;
+	for( int sourceIndex = 0;  sourceIndex < array.length;  sourceIndex++ )
+	{
+		if( array[sourceIndex] != 0 )
+        array[targetIndex++] = array[sourceIndex];
+    }
+    double[] newArray = new double[targetIndex];
+    System.arraycopy( array, 0, newArray, 0, targetIndex );
+    return newArray;
+}
+;

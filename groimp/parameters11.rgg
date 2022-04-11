@@ -1,0 +1,97 @@
+ import static parameters.*;
+
+/* tulip */
+
+{
+	// field parameters
+	nrRows[tulip] = 5;                  // number of rows
+	nrPlants[tulip] = 5;                // number of plants in a row
+	rowDistance[tulip] = 0.2;          // distance between rows
+	plantDistance[tulip] = 0.05;        // distance between plants in a row
+	delay[tulip] = 0;                   // germination delay after start of simulation (in days, to represent late sowing)
+	harvest[tulip] = 70;               // duration, i.e. harvest/removal time after emergence (in days)
+	hexa[tulip] = false;                // true: hexagonal layout, rectangular otherwise
+	offspotIntraRow[tulip] = 0;			// fraction of plant distance the plant seed is off-spot
+	offspotInterRow[tulip] = 0;			// fraction of row distance the plant seed is off-spot
+	                                    
+	// plant parameters                 
+	determinate[tulip] = true;			// TRUE = determinate, FALSE = indeterminate
+	plastochron[tulip] = 92;            // time between creation of two phytomers (dd)
+	phyllochron[tulip] = 92;			// time between appearance of two leaves (dd)
+	finalPhytNum[tulip] = 4;        // final number of main stem vegetative phytomers
+	nrShortInternodes[tulip] = 1;       // number of bottom internodes that should not elongate 
+                                        
+	wmaxRoot[tulip] = 770;            // maximum root system biomass
+	wmaxFlower[tulip] = 0.5*550;         // maximum flower/fruit biomass
+	wmaxInt[tulip] = 440;              // maximum internode biomass
+	wmaxLeaf[tulip] = 550;              // maximum leaf biomass
+	teRoot[tulip] = 850;               // root growth duration
+	teFlower[tulip] = 510;              // flower/fruit growth duration
+	teInt[tulip] = 126;                 // internode growth duration
+	teLeaf[tulip] = 255;                // leaf growth duration
+
+	maxWidthInt[tulip] = 0.005;			// maxium internode width
+	specificInternodeLength[tulip] = 0.20;//*   // internode ratio length / biomass (mm/mg)
+
+	amax[tulip] = 25;    // *            // max photosynthesis rate
+	eff[tulip] = 0.06;   // *               // initial light use efficiency (initial slope of light response curve)
+	C4[tulip] = false;					// false: C3, true: C4 (parameter only valid when FvCB is true)
+	nitro[tulip] = 0.028;					// leaf nitrogen mass fraction at top of canopy
+	
+	LMA[tulip] = 7.14;                     // leaf mass per unit area (mg / cm2)
+	leafLife[tulip] = 2;                // life span of a leaf since appearance (expressed as X times its growth duration (te))
+	lwRatio[tulip] = 7;                 // ratio between leaf blade length and width
+	maxWidth[tulip] = 0.5;  //*           // location on the leaf where width is maximal (fraction of length)
+	shapeCoeff[tulip] = 0.7;   //*         // leaf shape coefficient (0 = rectangular, high value = pinched)
+	leafCurve[tulip] = 35;  //*            // leaf curvature - angle between bottom and top of leaf blade (0 = flat)
+
+	rankLower[tulip] = 2;				// final phtyomer that has properties of lower phytomers (e.g. nr of leaflets, leaf angle, etc) 
+
+	leafAngleLower[tulip] = 10;		// insertion angle of lower leaves (90 = horizontal)
+	leafAngleUpper[tulip] = 10;		// insertion angle of upper leaves (90 = horizontal)
+
+	nrLeafletsLower[tulip] = 1;				 // number of leaflets per leaf for the lower phytomers
+	nrLeafletsUpper[tulip] = 1;				 // number of leaflets per leaf for the upper phytomers
+	petioleFraction[tulip] = 0;		 // fraction of biomass partitioned to the petiole
+	petioluleFraction[tulip] = 0;	 // fraction of biomass partitioned to the petiolule
+	specificPetioleLength[tulip] = 2.5; // specific petiole length (mm/mg)
+	specificPetioluleLength[tulip] = 5.0;// specific petiolule length (mm/mg)
+	
+	nrLeavesLower[tulip] = 1;			// number of leaves per phytomer for the lower phytomers
+	nrLeavesUpper[tulip] = 1;			// number of leaves per phytomer for the upper phytomers
+	phyllotaxisLower[tulip] = 180;           // angle between consecutive leaves along a stem for the lower phytomers
+	phyllotaxisUpper[tulip] = 180;           // angle between consecutive leaves along a stem for the upper phytomers
+	
+	varDelay[tulip] = 3;                // max variation in germination delay (in days, 0 = simultaneous germination)
+	seedMass[tulip] = 5000;             // seed endosperm mass in mg
+	
+	SASextend[tulip] = true;				// toggle internode SAS extention response
+	
+	branching[tulip] = false;			 // toggle branching
+	tillersOnly[tulip] = false;		// true: bud break only if parent internode has length 0 (= tillering)
+	dominance[tulip] = 1.0;				// minimum dominance, so maximal branching phytomer distance, at infinitely large source/sink ratio (no neighbours)
+	srAbortThresh[tulip] = 0.2;			// threshold sink/source ratio for branch abortion
+	
+	tb[tulip] = 4;						// base temperature for thermal time calculation
+
+	EL[tulip] = 51; 					// Root elongation rate mm mm-1 day-1 
+	Dinit[tulip] = 0.0011;				// Initial root Diameter in m 
+	RTD[tulip]	= 200;					// Root tissue density (g/cm3) (Pages 2013 - generic)
+	MP[tulip] = 5;						// Maximum number of root primordia 
+	ER[tulip] = 0.056;					// Emergence rate of root primordia per day = 0.968 at 25 degrees which is 0.056 per dregreeday. 
+	IBD[tulip] = 0.0078;				// Inter Branch Distance 
+	IBDmax[tulip] = 0.039; 			// Inter branch distance of the highest root order 
+	RZone[tulip] = 0.01;				// No lateral zone in m 
+	RDM0[tulip] = 0.5;					// Ratio Daughter Mother Diameter 
+	RDM1[tulip] = 0.375;					// Ratio Daughter Mother Diameter 
+	sdD[tulip] = 0.09;					// Standard deviation diameter for RDM 
+	angleAVG[tulip] = 60;				// average insertion angle of lateral roots
+	angleVAR[tulip] = 20;				// variation in the insertion angle of lateral roots
+	MCP[tulip]	= 5;					//random root movement based on mechanical constraints; radial degrees/m
+	MaxRootOrder[tulip] = 0;
+	fineRootD[tulip] = 0.1;			// Diameter in m/m
+	fineRootDensity[tulip]	= 32;		// m fine roots/m coarse root	
+	RLratio[tulip]	= 1;	 			// Root/Leaf ratio
+	fMyc[tulip] = 0;					// +MF 0.00005
+	Groot[tulip] = 0.01;				// Base rate of Gravitropism 
+}

@@ -1,0 +1,201 @@
+
+import static modules_organs.*;
+import static modules_base.*;
+import static modules_light.*;
+import static parameters.*;
+import static environment.*;
+import static RootModule.*;
+import static SimpleSoilModule.*;
+
+static void renew()
+[
+	{
+		time++;
+		dayOfYear++;
+		updateIncomingLight();
+		calcTemp();
+	}
+	
+	// update light sources
+	dr:DirectLight ::>
+	{
+		dr.update();
+	}
+	df:DiffuseLight ::>
+	{
+		df.update();
+	}
+	
+	// calculate all organ ages
+	o:Organ ::> 
+	{
+		o.calcAge();
+	}
+	
+	// calculate nitrogen level (no roots) or demand (roots)
+	v:VisibleOrgan ::>
+	{
+   	   if (rootModule == false) {
+   	   	   v.calcNitrogen();
+       } else {
+       	   v.calcNitrogenDemand();
+       }
+    }
+
+    // calculate plant nitrogen sink and source strength
+    pb:PlantBase ::> 
+    {
+   	   pb.calcNSinkStrength();
+   	   pb.calcNSourceStrength();
+   	}   
+
+   	// calculate allocation of nitrogen to photosynthesizing organ
+   	v:VisibleOrgan::>
+   	{
+   	   if(rootModule==true)
+   	   {
+   	   	   v.calcNitrogenAllocation();
+       }
+    }
+
+	
+	// calculate sink strength for all growing organs
+	g:GrowingOrgan ::>
+	{
+		g.calcSinkStrength();
+	}
+
+	// calculate light interception and photosynthesis for all visible organs
+	v:VisibleOrgan ::> 
+	{
+		v.calcLight();
+		v.calcPhytochrome();
+		v.calcPhotosynthesis();
+	}
+	
+	// accumulate organ assimilates and sink strengths for the whole plant
+	// calculate the strength of the SAS response
+	pb:PlantBase ::> 
+	{
+		pb.calcAge();
+		pb.calcSourceStrength();
+		pb.calcSinkStrength();
+		pb.calcSAScoefficient();
+	}
+
+	// calculate organ growth
+	g:GrowingOrgan ::> 
+	{
+		g.calcAssimilateAllocation();
+	}
+	
+	// calculate physical sizes of visible organs
+	v:VisibleOrgan ::> 
+	{
+		v.calcDimensions();
+	}
+	
+	// calculate resource uptake from the soil
+	n:RichSoil ::> {
+		n.Uptake();
+	}
+	
+	// calculate growth of root system	
+	r:RootBase ::> 
+	{
+		//r.calcAge();
+		r.calcGrowth();
+		r.Uptake();
+	}
+	
+	r:RootOrgan ::> 
+	{
+		r.update();
+	}
+	
+
+	// update bud dormancy
+	a:Apex ::>
+	{
+		a.updateDominance();
+		a.updateDormancy();
+	}
+	
+	// update flower dormancy
+	f:Flower ::>
+	{
+		f.calcFlowerDormancy();
+	}
+	
+	// update leaf insertion angle
+	l:Leaf ::>
+	{
+		l.calcSegments();
+		l.calcAngle();
+	}
+	
+	// update branch-level variables
+	bb:BranchBase ::>
+	{
+		bb.update();
+	}
+	
+	// update plant-level variables using info from individual organs
+	pb:PlantBase ::>
+	{
+		pb.updateAbsorbedRadiation();
+		pb.updateBiomass();
+		pb.updateSurfaceArea();
+		pb.updateHeight();
+		pb.updateRootLength();
+		pb.updateBranches();
+		pb.updateRfr();
+		if (writePlantTable == true) {pb.updateTable();}
+	}
+	
+	// update field-level variables
+	fb:FieldBase ::>
+	{
+		fb.updateLai();
+		fb.updateHarvest();
+		fb.updateAbsorbedRadiation();
+		fb.updateBiomass();
+		fb.updateYield();
+		if (writeFieldTable == true) {fb.updateTable();}
+	}
+	
+	// calculate light on soil tiles and sensors
+	ref:RefTile ::>
+	{
+		ref.calcLight();
+	}
+	t:Tile ::>
+	{
+		t.calcLight();
+	}
+	it:ITile ::>
+	{
+		it.calcLight();
+	}
+	ls:LightSensor ::>
+	{
+		ls.calcLight();
+	}
+	
+	// record tile and sensor light in case of plant-independent tiles
+	cs:CombiSensor ::>
+	{
+		cs.updateTables();
+	}
+	
+	// update TileBase light variables
+	tb:TileBase ::>
+	{
+		tb.updateTransect(); 
+	}
+	
+	//rb:RootBase ::> {println(rb.age);println(tav);println(tb[rb.species]);}
+	
+	// workaround for 3D view selection bug
+	o:Organ ::> o[length] += 0;
+]

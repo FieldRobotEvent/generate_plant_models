@@ -1,0 +1,3 @@
+pymeshlab
+jinja2
+opencv-python

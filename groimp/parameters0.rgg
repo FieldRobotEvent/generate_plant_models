@@ -1,0 +1,97 @@
+import static parameters.*;
+
+/* dicot1; general dicot */
+
+{
+	// field parameters
+	nrRows[dicot1] = 5;                  // number of rows
+	nrPlants[dicot1] = 5;                // number of plants in a row
+	rowDistance[dicot1] = 0.1;          // distance between rows
+	plantDistance[dicot1] = 0.1;        // distance between plants in a row
+	delay[dicot1] = 0;                   // germination delay after start of simulation (in days, to represent late sowing)
+	harvest[dicot1] = 77;               // duration, i.e. harvest/removal time after emergence (in days)
+	hexa[dicot1] = false;                // true: hexagonal layout, rectangular otherwise
+	offspotIntraRow[dicot1] = 0.05;			// fraction of plant distance the plant seed is off-spot
+	offspotInterRow[dicot1] = 0.05;			// fraction of row distance the plant seed is off-spot
+	                                    
+	// plant parameters                 
+	determinate[dicot1] = true;			// TRUE = determinate, FALSE = indeterminate
+	plastochron[dicot1] = 70;            // time between creation of two phytomers (dd)
+	phyllochron[dicot1] = 70;			// time between appearance of two leaves (dd)
+	finalPhytNum[dicot1] = 12;        // final number of main stem vegetative phytomers
+	nrShortInternodes[dicot1] = 0;       // number of bottom internodes that should not elongate 
+                                        
+	wmaxRoot[dicot1] = 20000;            // maximum root system biomass
+	wmaxFlower[dicot1] = 5000;         // maximum flower/fruit biomass
+	wmaxInt[dicot1] = 1000;              // maximum internode biomass
+	wmaxLeaf[dicot1] = 1000;              // maximum leaf biomass
+	teRoot[dicot1] = 1800;               // root growth duration
+	teFlower[dicot1] = 500;              // flower/fruit growth duration
+	teInt[dicot1] = 500;                 // internode growth duration
+	teLeaf[dicot1] = 500;                // leaf growth duration
+
+	maxWidthInt[dicot1] = 0.003;			// maxium internode width
+	specificInternodeLength[dicot1] = 0.075;  // internode ratio length / biomass (mm/mg)
+
+	amax[dicot1] = 25;                   // max photosynthesis rate
+	eff[dicot1] = 0.06;                  // initial light use efficiency (initial slope of light response curve)
+	C4[dicot1] = false;					// false: C3, true: C4 (parameter only valid when FvCB is true)
+	nitro[dicot1] = 0.0625;					// leaf nitrogen mass fraction at top of canopy
+	
+	LMA[dicot1] = 4;                     // leaf mass per unit area (mg / cm2)
+	leafLife[dicot1] = 2;                // life span of a leaf since appearance (expressed as X times its growth duration (te))
+	lwRatio[dicot1] = 2;                 // ratio between leaf blade length and width
+	maxWidth[dicot1] = 0.5;             // location on the leaf where width is maximal (fraction of length)
+	shapeCoeff[dicot1] = 1.2;            // leaf shape coefficient (0 = rectangular, high value = pinched)
+	leafCurve[dicot1] = 70;              // leaf curvature - angle between bottom and top of leaf blade (0 = flat)
+
+	rankLower[dicot1] = 1;				// final phtyomer that has properties of lower phytomers (e.g. nr of leaflets, leaf angle, etc) 
+
+	leafAngleLower[dicot1] = 80;		// insertion angle of lower leaves (90 = horizontal)
+	leafAngleUpper[dicot1] = 80;		// insertion angle of upper leaves (90 = horizontal)
+
+	nrLeafletsLower[dicot1] = 1;				 // number of leaflets per leaf for the lower phytomers
+	nrLeafletsUpper[dicot1] = 1;				 // number of leaflets per leaf for the upper phytomers
+	petioleFraction[dicot1] = 0.1;		 // fraction of biomass partitioned to the petiole
+	petioluleFraction[dicot1] = 0.025;	 // fraction of biomass partitioned to the petiolule
+	specificPetioleLength[dicot1] = 1.5; // specific petiole length (mm/mg)
+	specificPetioluleLength[dicot1] = 5.0;// specific petiolule length (mm/mg)
+	
+	nrLeavesLower[dicot1] = 2;			// number of leaves per phytomer for the lower phytomers
+	nrLeavesUpper[dicot1] = 1;			// number of leaves per phytomer for the upper phytomers
+	phyllotaxisLower[dicot1] = 90;           // angle between consecutive leaves along a stem for the lower phytomers
+	phyllotaxisUpper[dicot1] = 137;           // angle between consecutive leaves along a stem for the upper phytomers
+	
+	varDelay[dicot1] = 0;                // max variation in germination delay (in days, 0 = simultaneous germination)
+	seedMass[dicot1] = 40;             // seed endosperm mass in mg
+	
+	SASextend[dicot1] = true;				// toggle internode SAS extention response
+	
+	branching[dicot1] = false;			 // toggle branching
+	tillersOnly[dicot1] = false;		// true: bud break only if parent internode has length 0 (= tillering)
+	dominance[dicot1] = 0;				// minimum dominance, so maximal branching phytomer distance, at infinitely large source/sink ratio (no neighbours)
+	srAbortThresh[dicot1] = 0.2;			// threshold sink/source ratio for branch abortion
+	
+	tb[dicot1] = 0;						// base temperature for thermal time calculation
+                  
+	EL[dicot1] = 51; 					// Root elongation rate mm mm-1 day-1 
+	Dinit[dicot1] = 0.0011;				// Initial root Diameter in m 
+	RTD[dicot1]	= 200;					// Root tissue density (g/cm3) (Pages 2013 - generic)
+	MP[dicot1] = 0;						// Maximum number of root primordia 
+	ER[dicot1] = 0.056;					// Emergence rate of root primordia per day = 0.968 at 25 degrees which is 0.056 per dregreeday. 
+	IBD[dicot1] = 0.0078;				// Inter Branch Distance 
+	IBDmax[dicot1] = 0.039; 			// Inter branch distance of the highest root order 
+	RZone[dicot1] = 0.01;				// No lateral zone in m 
+	RDM0[dicot1] = 0.5;					// Ratio Daughter Mother Diameter
+	RDM1[dicot1] = 0.375;				// Ratio Daughter Mother Diameter 
+	sdD[dicot1] = 0.09;					// Standard deviation diameter for RDM 
+	angleAVG[dicot1] = 60;				// average insertion angle of lateral roots
+	angleVAR[dicot1] = 20;				// variation in the insertion angle of lateral roots
+	MCP[dicot1]	= 5;					//random root movement based on mechanical constraints; radial degrees/m
+	MaxRootOrder[dicot1] = 1;
+	fineRootD[dicot1] = 0.1;			// Diameter in m/m
+	fineRootDensity[dicot1]	= 32;		// m fine roots/m coarse root	
+	RLratio[dicot1]	= 1;	 			// Root/Leaf ratio
+	fMyc[dicot1] = 0;					// +MF 0.00005
+	Groot[dicot1] = 0.25;				// Base rate of Gravitropism 
+}

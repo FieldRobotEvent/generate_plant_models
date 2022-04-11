@@ -1,0 +1,457 @@
+import static parameters.*;
+import static environment.*;
+import static modules_organs.*;
+import static RootModule.*;
+
+import de.grogra.ray.physics.Spectrum;
+import de.grogra.ray.physics.Spectrum3d;
+
+// module that contains field-wide variables
+module FieldBase extends Null
+{
+	double[] leafArea = new double[totalSpecies];				// leaf area
+	double[] lai = new double[totalSpecies];					// leaf area index
+	double[] nrShoots = new double[totalSpecies];				// shoots per m2 (branches + main stem)
+	double[] absorbedRadiation = new double[totalSpecies];		// canopy absorbed radiation (umol / m2 / s)
+	double[] accumulatedRadiation = new double[totalSpecies];	// cumulative absorbed radiation (mol / m2)
+	double[] fabs = new double[totalSpecies];					// fraction of global radiation absorbed by the canopy
+	double totalFabs;											// fabs for all species combined
+	double[] rfr = new double[totalSpecies];					// average R:FR in the canopy
+	double[] k = new double[totalSpecies];						// light extinction coefficient in Lambert-Beer equation
+	double[] assCO2 = new double[totalSpecies];					// canopy assimilated CO2 (umol / m2 )
+	double[] biomass = new double[totalSpecies];				// biomass of the focal plants (gr / m2) 
+	double[] yld = new double[totalSpecies];					// biomass of the reproductive organ of the focal plants (gr / m2)
+	double[] biomassAbove = new double[totalSpecies];			// aboveground biomass of the focal plants (gr /m2)
+	double[] hi = new double[totalSpecies];						// harvest index (yield / aboveground biomass)
+	boolean[] harvested = new boolean[totalSpecies];			// flagged to true after harvest
+	
+	// determine whether it is time to stop the whole simulation
+	void updateHarvest() {
+		long n = count( (* pb:PlantBase, (pb.harvested == false) *));
+		if (n == 0) {
+			end = true;
+		}
+	}
+
+	// calculate LAI
+	void updateLai() {
+		for (int s=0; s<=totalSpecies-1; s++) {
+			if (spPresence[s] == true) {
+				leafArea[s] = sum((* pb:PlantBase, (pb.species == s) *)[leafArea]);
+				lai[s] = leafArea[s] / area[s];
+				laidata.getRow(time).set(s,lai[s]);
+				nrShoots[s] = sum((* pb:PlantBase, (pb.species == s) *)[nrBranches] +1) / area[s];
+			}
+		}
+	}
+	
+	// calculate absorbed radiation and R:FR at field level
+	void updateAbsorbedRadiation() {
+		totalFabs = 0;
+		for (int s=0; s<=totalSpecies-1; s++)
+		{
+			if (spPresence[s] == true) {
+				absorbedRadiation[s] = sum((* pb:PlantBase, (pb.species == s) *)[absorbedRadiation]) / totalArea;
+				fabs[s] = absorbedRadiation[s] / PPFD;
+				totalFabs += fabs[s];
+				fieldFabs.getRow(time).(set(s,fabs[s]), set(totalSpecies,totalFabs));				
+				rfr[s] = mean((* pb:PlantBase, (pb.species == s) *)[rfr]);
+				fieldRFR.getRow(time).(set(s,rfr[s]));
+				k[s] = - Math.log(1-fabs[s]) / lai[s];
+				//println(k[s]);
+				accumulatedRadiation[s] = sum((* pb:PlantBase, (pb.species == s) *)[accumulatedRadiation]) / area[s];
+				assCO2[s] = sum((* pb:PlantBase, (pb.species == s) *)[assimilated]) / area[s];
+				fieldAssim.getRow(time).(set(s,assCO2[s]/1e6));
+			}
+		}
+	}
+	
+	// calculate biomass
+	void updateBiomass() {
+		for (int s=0; s<=totalSpecies-1; s++)
+		{
+			if (spPresence[s] == true && harvested[s] == false) {
+				biomass[s] = 0.001 * sum((* pb:PlantBase, (pb.species == s) *)[biomass]) / area[s];
+				biomassAbove[s] = 0.001 * sum((* pb:PlantBase, (pb.species == s) *)[biomassAbove]) / area[s];
+				fieldBiomass.getRow(time).(set(s,biomass[s]));
+			}
+		}
+	}
+	
+	// calculate yield
+	void updateYield() {
+		for (int s=0; s<=totalSpecies-1; s++)
+		{
+			if (spPresence[s] == true && harvested[s] == false) {
+				yld[s] = 0.001 * sum((* pb:PlantBase, (pb.species == s) *)[yld]) / area[s];
+				fieldYield.getRow(time).(set(s,yld[s]));
+				hi[s] = yld[s] / biomassAbove[s];
+			}
+		}
+		if (end == true || time == halt) {
+			for (int s=0; s<=totalSpecies-1; s++) {
+				if (spPresence[s] == true && s != weedSpecies) {
+					println("Final yield of species "+speciesNames[s]+": "+0.01*yld[s]+" t/ha");
+					println("Harvest index of species "+speciesNames[s]+": "+hi[s]);
+				}
+			}
+		}
+	}
+	
+	void updateTable() {
+		for (int s=0; s<=totalSpecies-1; s++) {
+			if (spPresence[s] == true) {
+				fieldOutput.addRow().(
+					set(0,time),
+					set(1,s), 
+					set(2,lai[s]), 
+					set(3,nrShoots[s]),
+					set(4,fabs[s]), 
+					set(5,assCO2[s]),
+					set(6,biomass[s]),
+					set(7,yld[s]),
+					set(8,hi[s]),
+					set(9,leafArea[s]),
+					set(10,rfr[s])
+				);
+			}
+		}
+	}
+}
+
+
+
+
+
+
+// module that contains plant-wide variables
+module PlantBase extends Null
+{
+	double age;					// plant age (degree days)
+	double ageD;				// plant age (days)
+	int strip;					// strip number
+	int row;					// row number
+	int pos;					// position within row
+	int species;				// plant species
+	boolean weed;				// true: weed plant
+	int plantNumber;			// plant number in the field
+	boolean germinated;
+	double absorbedRadiation;	// absorbed radiation (umol / s)
+	double accumulatedRadiation;// cumulative absorbed radiation (mol)
+	double fabs;				// fraction absorbed radiation of global radiation
+	double assimilated;			// assimilated carbon (umol CO2 / day)
+	double substrates;			// substrates available for growth (mg / day)
+	double reservePool;			// substrates reserves
+	double biomass;				// total plant biomass (all organs + reserves)
+	double yld;					// plant yield (biomass of reproductive organ)
+	double biomLeaf;			// leaf biomass
+	double biomBlade;			// blade biomass
+	double biomStem;			// stem biomass
+	double biomRoots;			// root system biomass
+	double shootRoot;			// shoot/root ratio (leaf+stem / roots)
+	double biomassAbove;		// aboveground biomass (leaf+stem+reproductive organs)
+	double sinkStrength;		// total plant sink strength
+	double sr;					// plant source/sink ratio
+	double leafArea;			// total plant leaf area
+	double stemArea;			// total plant stem area
+	double height;				// plant height
+	double rfr;					// red/far-red ratio perceived by the stem (average of internode rfr values)
+	boolean harvested;			// true if harvested
+	long nrBranches;				// number of branches on the plant (non-dormant buds)  
+	boolean flowering;			// true if main stem switched to producing the inforescence  
+	boolean extending;			// true if main ste has started extension growth
+	boolean die;				// true if plant should be killed
+	double initialAngle;
+	double SAScoefficient;		// shade avoidance coefficient
+	
+	double Nsource;				// plant nitrogen supply available to be allocated (g)
+	double Nsink;				// plant nitrogen demand provided by light gradient (g)
+	double Nsr;					// plant nitrogen source/sink ratio
+	double NuptakeTotal;		// cumulative Nsource (N taken up in total) (g)
+	double Nstem;				// nitrogen allocated to the stem (not used for photosynthesis)
+	double Ngrain;				// nitrogen allocated to the grain
+	double Nphoto;				// nitrogen allocated to photosynthetic surfaces 
+	double Nroots;				// nitrogen remaining in (allocated to) the roots after uptake
+	
+	double Psource;				// plant phosphorous supply provided by roots (g)
+	double rootLength;			// plant root length (m)
+	
+	// initiation of the plant
+	void initiate(int species, boolean weed, Seed s, int i, int row, int pos, int strip)
+	{
+		this.species = species;
+		plantNumber = i;		
+		this.strip = strip;
+		this.row = row;
+		this.pos = pos;
+		reservePool = s[endo];
+		Nsource = s[endoN];
+		this.weed = weed;
+		this.setTranslation(
+			random(-offspotIntraRow[species]*plantDistance[species],offspotIntraRow[species]*plantDistance[species]),
+			random(-offspotInterRow[species]*rowDistance[species],offspotInterRow[species]*rowDistance[species]),
+			0
+		);
+	}
+	
+	void germinate() {
+		germinated = true;
+		age = 0;
+		ageD = 0;
+	}
+	
+	// calculate plant age
+	void calcAge() {
+		age += (Math.max(0,tav - tb[species]));
+		ageD++;
+	}
+	
+	// calculate substrates for growth based on assimilates acquired
+	double calcSourceStrength()
+	{
+		// for carbon
+		assimilated = sum((* v:VisibleOrgan, (v.plantNumber == plantNumber) *)[assimilated]);
+		double mCO2 = 44.01;	// CO2 molar mass  (gr/mol)
+		double rm = 0.015;		// maintenance respiration  (gr CO2 / gr plant biomass / day)
+		double fCO2 = 0.6;		// conversion factor grom gr CO2 to gr biomass
+		substrates = Math.max(0,(mCO2 * assimilated * 1e-3 - rm * biomass) * fCO2 + reservePool);
+		long nrSinks = count((* g:GrowingOrgan, (g.plantNumber == plantNumber && g.sinkStrength > 0) *));
+		if (nrSinks > 0) {
+			reservePool = 0;
+		}
+	}
+
+	double calcNSourceStrength()
+	{
+		// for nitrogen
+		double targetNstem = 0.01*biomStem/1000;		// 1% of stem biomass should be N (now maize specific; to be made species parameters) 
+		double newNstem = targetNstem - Nstem;			// how amount of new N  the stem needs to satisfy the target
+		Nstem += newNstem;								// new actual amount of N in stem
+		Nsource -= newNstem;							// remove amount allocated to stem from N available
+		
+		double targetNgrain = 0.015*yld/1000;			// 1.5% of grain biomass shuld be N (now maize specific; to be made species parameters)
+		double newNgrain = targetNgrain - Ngrain;
+		Ngrain += newNgrain;
+		Nsource -= newNgrain;
+	}
+
+	
+	// calculate plant sink strength based on organ sink strengths 
+	double calcSinkStrength()
+	{
+		// for carbon
+		double result = sum((* g:GrowingOrgan, (g.plantNumber == plantNumber) *)[sinkStrength]);
+		if (result > 0) {
+			sinkStrength = result;
+		} else {
+			sinkStrength = 0.00001;
+		}
+		if (functional == true) {
+			sr = substrates / sinkStrength;
+			if (sr < 0.01 && flowering == false)
+				{
+					die = true;
+				}
+		} else {
+			sr = 1;								// is functional == false, height growth and branching are not regulated by sr anymore
+		}
+	}
+	
+	double calcNSinkStrength()
+	{
+		//for nitrogen
+		if (rootModule == true) {
+			Nsink = sum((* v:VisibleOrgan, (v.plantNumber == plantNumber) *)[DLN]);
+			if (Nsink>0) {Nsr = Nsource / Nsink;}
+		}
+	}
+	
+	// update plant biomass and yield
+	void updateBiomass()
+	{
+		//double p = biomass;
+		biomass = reservePool + sum((* g:GrowingOrgan, (g.plantNumber == plantNumber) *)[biomass]);
+		yld = sum((* f:Flower, (f.plantNumber == plantNumber) *)[biomass]);
+		biomLeaf = sum((* l:Leaf, (l.plantNumber == plantNumber) *)[biomass]);
+		biomBlade = sum((* l:Leaf, (l.plantNumber == plantNumber) *)[bladeMass]);
+		biomStem = sum((* i:Internode, (i.plantNumber == plantNumber) *)[biomass]);
+		if (rootModule == true) {
+			biomRoots = sum((* r:RootBase, (r.plantNumber == plantNumber) *)[biomass]);
+		} else {
+			biomRoots = sum((* r:RootSystem, (r.plantNumber == plantNumber) *)[biomass]);
+		}
+		shootRoot = (biomLeaf + biomStem) / biomRoots;
+		biomassAbove = yld + biomLeaf + biomStem;
+		Nphoto = sum((* l:Leaf, (l.plantNumber == plantNumber) *)[LN]) +
+				sum((* i:Internode, (i.plantNumber == plantNumber) *)[LN]);
+		//println(Nphoto);
+		plantYield.getRow(plantNumber-1).set(0,yld/1000);
+		plantBiomass.getRow(time).set(plantNumber,biomass/1000);
+		if (sr<2) {sourceSink.getRow(time).set(plantNumber,sr);}
+		photo.getRow(time).set(plantNumber,assimilated/1000);
+		//sourceSink.getRow(time).set(plantNumber,sr);
+		reserves.getRow(time).set(plantNumber,reservePool/1000);
+		plantNitro.getRow(time).set(plantNumber,Nsource);
+		plantNitroTotal.getRow(time).set(plantNumber,NuptakeTotal);
+		plantNitroRatio.getRow(time).set(plantNumber,Nsr);
+		plantRootLength.getRow(time).set(plantNumber,rootLength);
+	}
+	
+	// update plant leaf and stem area
+	void updateSurfaceArea() {
+		leafArea = sum((* l:Leaf, (l.plantNumber == plantNumber) *)[area]);
+		stemArea = sum((* i:Internode, (i.plantNumber == plantNumber) *)[area]);
+		plantLeafArea.getRow(time).set(plantNumber,leafArea);
+	}
+
+	// update plant height
+	void updateHeight() {
+		height = sum((* i:Internode, (i.plantNumber == plantNumber && i.order == 0) *)[length]);
+		plantHeight.getRow(time).set(plantNumber,height);
+	}
+	
+	// update root length
+	void updateRootLength() {
+		rootLength = sum((* r:RootOrgan, (r.plantNumber == plantNumber) *)[length]);
+		//			+ sum((* ra:RootApex, (ra.plantNumber == plantNumber) *)[length]);
+	}
+	
+	// save number of branches
+	void updateBranches() {
+		nrBranches = count((*bb:BranchBase, (bb.plantNumber == plantNumber && bb.dormant == false)*));
+		plantBranches.getRow(time).set(plantNumber,nrBranches);
+	}
+	
+	// update plant absorbed radiation
+	void updateAbsorbedRadiation() {
+		double leafRad = sum((* l:Leaf, (l.plantNumber == plantNumber) *)[abs]);
+		double stemRad = sum((* i:Internode, (i.plantNumber == plantNumber) *)[abs]);
+		absorbedRadiation = leafRad;
+		fabs = absorbedRadiation / ( (/*leafArea*/rowDistance[species]*plantDistance[species]) * PPFD);
+		if (fabs < 2) {plantFabs.getRow(time).set(plantNumber,fabs);}
+		accumulatedRadiation += 1e-6 * (absorbedRadiation * dayLength*60*60);
+		plantCPAR.getRow(time).set(plantNumber,accumulatedRadiation);
+	}
+	
+	// update plant red/far-red ratio
+	void updateRfr() {
+		double leafRed = sum((* l:Leaf, (l.plantNumber == plantNumber && l.area > 0.00001) *)[red]);
+		double leafFarRed = sum((* l:Leaf, (l.plantNumber == plantNumber && l.area > 0.00001) *)[farred]);
+		double stemRed = sum((* i:Internode, (i.plantNumber == plantNumber && i.area > 0.00001) *)[red]);
+		double stemFarRed = sum((* i:Internode, (i.plantNumber == plantNumber && i.area > 0.00001) *)[farred]);
+		double totalRed = leafRed+stemRed;
+		double totalFarRed = leafFarRed+stemFarRed;
+		if (totalFarRed != 0) {
+			rfr = totalRed / totalFarRed;
+		} else {
+			rfr = rfrIncoming;
+		}
+		//println(Math.round(leafRed)+" "+Math.round(leafFarRed)+" "+Math.round(stemRed)+" "+Math.round(stemFarRed)+" "+rfr);
+		//rfr = mean((* v:VisibleOrgan, (v.plantNumber == plantNumber && v.rfr>0) *)[rfr]);
+		//rfr = mean((* s:LightSensor, (s.plantNumber == plantNumber && s.rfr>0) *)[rfr]);
+		plantRFR.getRow(time).set(plantNumber,rfr);
+	}
+	
+	void calcSAScoefficient()
+	{
+		double max = 20;//10;
+		double min = 1;
+		double k = 9;//4;
+		SAScoefficient = (max-min) * Math.exp(-k * sr) + min;
+		plantSAS.getRow(time).set(plantNumber,SAScoefficient);
+	}
+
+	boolean shouldHarvest() {
+		return time >= harvest[species] + delay[species];
+	}
+	
+	void harvest() {
+		harvested = true;
+		FieldBase fb = first((* this (<--)+ FieldBase *));
+		fb.harvested[species] = true;
+	}
+		
+	void updateTable() {
+			plantOutput.addRow().(
+				set(0,time),
+				set(1,age),
+				set(2,plantNumber),
+				set(3,strip),
+				set(4,row),
+				set(5,pos),
+				set(6,species),
+				set(7,weed?1:0),
+				set(8,age),
+				set(9,ageD),
+				set(10,nrBranches),
+				set(11,leafArea),
+				set(12,fabs),
+				set(13,accumulatedRadiation),
+				set(14,rfr),
+				set(15,biomass),
+				set(16,yld),
+				set(17,biomLeaf),
+				set(18,biomStem),
+				set(19,biomRoots),
+				set(20,shootRoot),
+				set(21,biomassAbove),
+				set(22,Nsource),
+				set(23,NuptakeTotal),
+				set(24,rootLength),
+				set(25,height),
+				set(26,Nphoto),
+				set(27,Nstem),
+				set(28,Ngrain),
+				set(29,Nroots),
+				set(30,biomBlade)
+			);
+		
+	}
+}
+==> 
+//[Translate(nrPlants[species]*plantDistance[species]+0.1,0,0) TextLabel(Math.round(100*height)).(getColor().set(new RGBColor(1,0,0)))]
+//[Translate(-nrPlants[species]*plantDistance[species]-0.1,0,0) TextLabel(nrBranches/*+" branches"*/).(getColor().set(new RGBColor(1,0,0)))]
+//[Translate(-nrPlants[species]*plantDistance[species]-0.1,-0.15,0) TextLabel(Math.round(biomass/1000)+" g").(getColor().set(new RGBColor(1,0,0)))]//TextLabel(0.01*Math.round(100*rfr))//.(getColor().set(new RGBColor(1,0,0)))
+if (time == 0) (Sphere(0.005).(setShader(weed?GREEN:YELLOW)))
+//M(-0.1)TextLabel(speciesNames[species])
+
+;
+
+
+
+
+
+                                               
+
+
+// module that contains branch-level variables, and that is used to perform branch abortion
+module BranchBase extends Null
+{
+	int plantNumber;
+	boolean dormant;
+	boolean extending;
+	int species;
+	int nrPhyts;		// nr of phytomers in the branch
+	int nrPhytsMother;	// nr of phytyomets on mother branch
+	
+	void initiate(Apex a) {
+		plantNumber = a.plantNumber;
+		species = a.species;
+		dormant = true;
+	}
+	
+	void update() {
+		BranchBase bb = first((* this (<--)+ BranchBase *));
+		if (bb != null) {
+			nrPhytsMother = bb.nrPhyts;
+		}
+	}
+	
+	boolean shouldFall() {
+		PlantBase pb = selectWhere((*p:PlantBase*), p.plantNumber == plantNumber);
+		Apex a = first((* this (-->)+ Apex *));
+		if (dormant == false && extending == false && a.age>300 && pb.sr < srAbortThresh[species]) {	// tiller abortion if not enough resources
+			return true;
+		}
+	}
+}

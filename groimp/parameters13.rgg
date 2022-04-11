@@ -1,0 +1,97 @@
+import static parameters.*;
+
+/* soy */
+
+{
+	// field parameters
+	nrRows[soy] = 5;                  // number of rows
+	nrPlants[soy] = 1;                // number of plants in a row
+	rowDistance[soy] = 0.15;          // distance between rows
+	plantDistance[soy] = 0.15;        // distance between plants in a row
+	delay[soy] = 0;                   // germination delay after start of simulation (in days, to represent late sowing)
+	harvest[soy] = 110;               // duration, i.e. harvest/removal time after emergence (in days)
+	hexa[soy] = false;                // true: hexagonal layout, rectangular otherwise
+	offspotIntraRow[soy] = 0;			// fraction of plant distance the plant seed is off-spot
+	offspotInterRow[soy] = 0;			// fraction of row distance the plant seed is off-spot
+	                                    
+	// plant parameters                 
+	determinate[soy] = false;			// TRUE = determinate, FALSE = indeterminate
+	plastochron[soy] = 60;            // time between creation of two phytomers (dd)
+	phyllochron[soy] = 60;			// time between appearance of two leaves (dd)
+	finalPhytNum[soy] = 1;        // final number of main stem vegetative phytomers
+	nrShortInternodes[soy] = 0;       // number of bottom internodes that should not elongate 
+                                        
+	wmaxRoot[soy] = 9000;            // maximum root system biomass
+	wmaxFlower[soy] = 700;//550;         // maximum flower/fruit biomass
+	wmaxInt[soy] = 274;              // maximum internode biomass
+	wmaxLeaf[soy] = 650;//470;              // maximum leaf biomass
+	teRoot[soy] = 1800;               // root growth duration
+	teFlower[soy] = 240;              // flower/fruit growth duration
+	teInt[soy] = 125;                 // internode growth duration
+	teLeaf[soy] = 125;                // leaf growth duration
+
+	maxWidthInt[soy] = 0.0075;			// maxium internode width
+	specificInternodeLength[soy] = 0.18;  // internode ratio length / biomass (mm/mg)
+
+	amax[soy] = 37.7;                   // max photosynthesis rate
+	eff[soy] = 0.06;                  // initial light use efficiency (initial slope of light response curve)
+	C4[soy] = false;					// false: C3, true: C4 (parameter only valid when FvCB is true)
+	nitro[soy] = 0.05;					// leaf nitrogen mass fraction at top of canopy
+	
+	LMA[soy] = 5;                     // leaf mass per unit area (mg / cm2)
+	leafLife[soy] = 7;                // life span of a leaf since appearance (expressed as X times its growth duration (te))
+	lwRatio[soy] = 2;                 // ratio between leaf blade length and width
+	maxWidth[soy] = 0.5;             // location on the leaf where width is maximal (fraction of length)
+	shapeCoeff[soy] = 0.81;            // leaf shape coefficient (0 = rectangular, high value = pinched)
+	leafCurve[soy] = 30;              // leaf curvature - angle between bottom and top of leaf blade (0 = flat)
+
+	rankLower[soy] = 1;				// final phtyomer that has properties of lower phytomers (e.g. nr of leaflets, leaf angle, etc) 
+
+	leafAngleLower[soy] = 45;		// insertion angle of lower leaves (90 = horizontal)
+	leafAngleUpper[soy] = 45;		// insertion angle of upper leaves (90 = horizontal)
+
+	nrLeafletsLower[soy] = 1;				 // number of leaflets per leaf for the lower phytomers
+	nrLeafletsUpper[soy] = 3;				 // number of leaflets per leaf for the upper phytomers
+	petioleFraction[soy] = 0.15;//0.35;		 // fraction of biomass partitioned to the petiole
+	petioluleFraction[soy] = 0.1;//0.05;	 // fraction of biomass partitioned to the petiolule
+	specificPetioleLength[soy] = 0.9; // specific petiole length (mm/mg)
+	specificPetioluleLength[soy] = 1;// specific petiolule length (mm/mg)
+	
+	nrLeavesLower[soy] = 2;			// number of leaves per phytomer for the lower phytomers
+	nrLeavesUpper[soy] = 1;			// number of leaves per phytomer for the upper phytomers
+	phyllotaxisLower[soy] = 90;           // angle between consecutive leaves along a stem for the lower phytomers
+	phyllotaxisUpper[soy] = 137;           // angle between consecutive leaves along a stem for the upper phytomers
+	
+	varDelay[soy] = 0;                // max variation in germination delay (in days, 0 = simultaneous germination)
+	seedMass[soy] = 80;//60;//187;             // seed endosperm mass in mg
+	
+	SASextend[soy] = true;				// toggle internode SAS extention response
+	
+	branching[soy] = true;			 // toggle branching
+	tillersOnly[soy] = false;		// true: bud break only if parent internode has length 0 (= tillering)
+	dominance[soy] = 14;				// minimum dominance, so maximal branching phytomer distance, at infinitely large source/sink ratio (no neighbours)
+	srAbortThresh[soy] = 0;			// threshold sink/source ratio for branch abortion
+	
+	tb[soy] = 3;						// base temperature for thermal time calculation 
+
+	EL[soy] = 51; 					// Root elongation rate mm mm-1 day-1 
+	Dinit[soy] = 0.0011;				// Initial root Diameter in m 
+	RTD[soy]	= 200;					// Root tissue density (g/cm3) (Pages 2013 - generic)
+	MP[soy] = 0;						// Maximum number of root primordia 
+	ER[soy] = 0.056;					// Emergence rate of root primordia per day = 0.968 at 25 degrees which is 0.056 per dregreeday. 
+	IBD[soy] = 0.0078;				// Inter Branch Distance 
+	IBDmax[soy] = 0.039; 			// Inter branch distance of the highest root order 
+	RZone[soy] = 0.01;				// No lateral zone in m 
+	RDM0[soy] = 0.5;					// Ratio Daughter Mother Diameter 
+	RDM1[soy] = 0.375;					// Ratio Daughter Mother Diameter 
+	sdD[soy] = 0.09;					// Standard deviation diameter for RDM 
+	angleAVG[soy] = 60;				// average insertion angle of lateral roots
+	angleVAR[soy] = 20;				// variation in the insertion angle of lateral roots
+	MCP[soy]	= 5;					//random root movement based on mechanical constraints; radial degrees/m
+	MaxRootOrder[soy] = 1;
+	fineRootD[soy] = 0.1;			// Diameter in m/m
+	fineRootDensity[soy]	= 32;		// m fine roots/m coarse root	
+	RLratio[soy]	= 1;	 			// Root/Leaf ratio
+	fMyc[soy] = 0;					// +MF 0.00005
+	Groot[soy] = 0.01;				// Base rate of Gravitropism 
+}

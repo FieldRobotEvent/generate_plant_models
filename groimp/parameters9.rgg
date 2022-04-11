@@ -1,0 +1,97 @@
+import static parameters.*;
+
+/* maize */
+
+{
+	// field parameters
+	nrRows[maize] = 1;                  // number of rows
+	nrPlants[maize] = 1;                // number of plants in a row
+	rowDistance[maize] = 0.60;          // distance between rows
+	plantDistance[maize] = 0.12;        // distance between plants in a row
+	delay[maize] = 0;                   // germination delay after start of simulation (in days, to represent late sowing)
+	harvest[maize] = 101;//95;               // duration, i.e. harvest/removal time after emergence (in days)
+	hexa[maize] = false;                // true: hexagonal layout, rectangular otherwise
+	offspotIntraRow[maize] = 0.025;			// fraction of plant distance the plant seed is off-spot
+	offspotInterRow[maize] = 0.025;			// fraction of row distance the plant seed is off-spot 	                                    
+
+	// plant parameters                 
+	determinate[maize] = true;			// TRUE = determinate, FALSE = indeterminate
+	plastochron[maize] = 25;//50;            // time between creation of two phytomers (dd)
+	phyllochron[maize] = 30;//70;			// time between appearance of two leaves (dd)
+	finalPhytNum[maize] = 17;//14;        // final number of main stem vegetative phytomers
+	nrShortInternodes[maize] = 4;       // number of bottom internodes that should not elongate 
+                                        
+	wmaxRoot[maize] = 10000;            // maximum root system biomass
+	wmaxFlower[maize] = 300000;         // maximum flower/fruit biomass
+	wmaxInt[maize] = 4000;              // maximum internode biomass
+	wmaxLeaf[maize] = 5000;//2000;              // maximum leaf biomass
+	teRoot[maize] = 1800;               // root growth duration
+	teFlower[maize] = 1000;              // flower/fruit growth duration
+	teInt[maize] = 500;                 // internode growth duration
+	teLeaf[maize] = 500;                // leaf growth duration
+
+	maxWidthInt[maize] = 0.02;//0.01;			// maxium internode width
+	specificInternodeLength[maize] = 0.05;//0.15;  // internode ratio length / biomass (mm/mg)
+
+	amax[maize] = 25;                   // max photosynthesis rate
+	eff[maize] = 0.06;                  // initial light use efficiency (initial slope of light response curve)
+	C4[maize] = true;					// false: C3, true: C4 (parameter only valid when FvCB is true)
+	nitro[maize] = 0.0417;//2.5;		// nitrogen content of leaves at top of canopy (g/m2 of leaf)
+	
+	LMA[maize] = 6;//4;                     // leaf mass per unit area (mg / cm2)
+	leafLife[maize] = 2;                // life span of a leaf since appearance (expressed as X times its growth duration (te))
+	lwRatio[maize] = 10.2;//10;               // ratio between leaf blade length and width
+	maxWidth[maize] = 0.6235;             // location on the leaf where width is maximal (fraction of length)
+	shapeCoeff[maize] = 0.7552;            // leaf shape coefficient (0 = rectangular, high value = pinched)
+	leafCurve[maize] = 90;//120;            // leaf curvature - angle between bottom and top of leaf blade (0 = flat)
+
+	rankLower[maize] = 3;				// final phtyomer that has properties of lower phytomers (e.g. nr of leaflets, leaf angle, etc) 
+
+	leafAngleLower[maize] = 60;		// insertion angle of lower leaves (90 = horizontal)
+	leafAngleUpper[maize] = 30;		// insertion angle of upper leaves (90 = horizontal)
+
+	nrLeafletsLower[maize] = 1;				 // number of leaflets per leaf for the lower phytomers
+	nrLeafletsUpper[maize] = 1;				 // number of leaflets per leaf for the upper phytomers
+	petioleFraction[maize] = 0.05;		 // fraction of biomass partitioned to the petiole
+	petioluleFraction[maize] = 0;	 // fraction of biomass partitioned to the petiolule
+	specificPetioleLength[maize] = 2.5; // specific petiole length (mm/mg)
+	specificPetioluleLength[maize] = 5.0;// specific petiolule length (mm/mg)
+	
+	nrLeavesLower[maize] = 1;			// number of leaves per phytomer for the lower phytomers
+	nrLeavesUpper[maize] = 1;			// number of leaves per phytomer for the upper phytomers
+	phyllotaxisLower[maize] = 137;           // angle between consecutive leaves along a stem for the lower phytomers
+	phyllotaxisUpper[maize] = 137;           // angle between consecutive leaves along a stem for the upper phytomers
+	
+	varDelay[maize] = 0;                // max variation in germination delay (in days, 0 = simultaneous germination)
+	seedMass[maize] = 100;             // seed endosperm mass in mg
+	
+	SASextend[maize] = true;				// toggle internode SAS extention response
+	
+	branching[maize] = false;			 // toggle branching
+	tillersOnly[maize] = true;		// true: bud break only if parent internode has length 0 (= tillering)
+	dominance[maize] = 0;				// minimum dominance, so maximal branching phytomer distance, at infinitely large source/sink ratio (no neighbours)
+	srAbortThresh[maize] = 0.2;			// threshold sink/source ratio for branch abortion
+	
+	tb[maize] = 8;						// base temperature for thermal time calculation
+
+	EL[maize] = 51; 					// Root elongation rate mm mm-1 day-1 
+	Dinit[maize] = 0.0012;				// Initial root Diameter in m 
+	RTD[maize]	= 200;					// Root tissue density (g/cm3) (Pages 2013 - generic)
+	MP[maize] = 10;						// Maximum number of root primordia 
+	ER[maize] = 0.056;					// Emergence rate of root primordia per day = 0.968 at 25 degrees which is 0.056 per dregreeday. 
+	IBD[maize] = 0.01;//0.01;				// Inter Branch Distance 
+	IBDmax[maize] = 0.005; 			// Inter branch distance of the highest root order 
+	RZone[maize] = 0.01;				// No lateral zone in m 
+	RDM0[maize] = 0.12;					// Ratio Daughter Mother Diameter 
+	RDM1[maize] = 0.375;					// Ratio Daughter Mother Diameter
+	sdD[maize] = 0.15;					// Standard deviation diameter for RDM 
+	angleAVG[maize] = 60;				// average insertion angle of lateral roots
+	angleVAR[maize] = 20;				// variation in the insertion angle of lateral roots
+	MCP[maize]	= 5;					//random root movement based on mechanical constraints; radial degrees/m
+	MaxRootOrder[maize] = 1;//0;
+	fineRootD[maize] = 0.1;			// Diameter in m/m
+	fineRootDensity[maize]	= 32;		// m fine roots/m coarse root	
+	RLratio[maize]	= 1;	 			// Root/Leaf ratio
+	fMyc[maize] = 0;					// +MF 0.00005
+	Groot[maize] = 0.05;				// Base rate of Gravitropism 
+}

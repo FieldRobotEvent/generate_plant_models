@@ -1,0 +1,227 @@
+import static parameters.*;
+import static environment.*;
+import static modules_organs.*;
+import static modules_base.*;
+import static RootModule.*;
+
+import de.grogra.ext.x3d.util.Util;
+
+// code below adapted from De Vries (in prep)
+
+
+/********************************************* 
+				MODULES
+************************************************/
+
+class Soil {
+	
+	static double ExploredSoil;
+	static double NrCells;
+	static double N;
+	static double exN; //N in explored soil
+	static double P;
+	static double exP; //P in explored soil;
+	
+	static void Uptake() {
+		if(sum((*RootBase*)[sinkStrength])>0) [
+			n:RichSoil ::> n.Uptake();
+		] else {
+			println("Roots stopped growing");
+		}
+	}
+
+	static void Explore(RootOrgan a) [
+		==> ^ 
+			{
+				Point3d loc = location(a);
+				double x = Math.floor(loc.x/cellSize)*cellSize + cellSize/2;
+				double y = Math.floor(loc.y/cellSize)*cellSize + cellSize/2;
+				double z = Math.floor(loc.z/cellSize)*cellSize;
+			}
+			
+			/*Added a hard requirement for soil boxes to appear inside the gridcloner plot*/
+			if(x>0&&x<longestStripLength&&y>0&&y<fieldWidth&&z<0) (
+				RichSoil(x,y,z)
+			) else {
+				//println("A root is trying to explore out of bounds");
+			};
+			
+			//consolidate the explored soil to avoid duplicates
+			{ derive(); }
+	]
+	
+	static void resetSoil() {
+		ExploredSoil = 0;
+		NrCells = totalArea/(cellSize**2) * (SoilDepth/cellSize);
+		N = NrCells * cellSize**3 * 1000 * soilN;
+		P = NrCells * cellSize**3 * 1000 * soilP;
+	}
+}
+
+//Module that determines if	an apex is entering unexplored soil
+abstract module ExploredSoil extends Box().(setLayer(rootBoxLayer)) {}
+
+//Phosphorous rich soil
+module RichSoil extends ExploredSoil
+{
+	double volume 		= cellSize**3;
+	double initN 		= volume * 1000 * soilN;
+	double N;
+	double initP	 	= volume * 1000 * soilP;
+	double P;
+	
+	double exploredVolumeN;
+	double exploredVolumeP;
+	double sumUptakeN = 0;
+	double sumUptakeP = 0;
+	
+	double a = 1;
+	double b = 1;
+	double c = 1;
+	
+	void Uptake() {		
+		if(checkCmin()) [
+			r:ExtendingRootOrgan, (endlocation(r) in volume(this)) ::> { calcPotUptakeN(r); calcPotUptakeP(r); }
+			r:ExtendingRootOrgan, (endlocation(r) in volume(this))::> { calcUptakeN(r); calcUptakeP(r); }
+		] else [
+			this ==> DepletedSoil(location(this));
+		]
+		
+		//reset instance variables
+		sumUptakeN=0;
+		sumUptakeP=0;
+		//Mycorrhiza.sumUptakeNMF=0;
+		//Mycorrhiza.sumUptakePMF=0;
+	}
+	
+	boolean checkCmin() {
+		//check if the N and P concentrations are nearing the Cmin for roots and MF
+		//Using a cutofff point of 5%
+		boolean r = N/(volume*1e3)>1.05*N_Cmin_r || P/(volume*1e3)>1.05*P_Cmin_r;
+		//boolean mf = N/(volume*1e3)>1.05*Math.min(N_Cmin_r,N_Cmin_mf) || P/(volume*1e3)>1.05*Math.min(P_Cmin_r,P_Cmin_mf);
+		//check in MF are present in the simulation
+		//boolean x = fMyc[0]+fMyc[1]>0 ? mf : r;
+		return r;
+	}
+	
+	static double disP(Point3d a, Point3d b) {
+		//returns the distance between two points
+		
+		double dX = a.x-b.x;
+		double dY = a.y-b.y;
+		double dZ = a.z-b.z;
+		
+		double r = Math.sqrt(dX*dX + dY*dY + dZ*dZ);
+		
+		return r;
+	}
+	
+	void calcPotUptakeN(ExtendingRootOrgan r) {
+
+		if(r instanceof RootApex) {//only primary and secondary roots facilitate N uptake
+			//volume in L
+			double vol = volume*1e3;
+			//Available N
+			double aN = Math.max(0, N - N_Cmin_r * vol);
+			//newly explored soil volume by this Apex
+			double newVolume = r.newRootLength * Math.PI * (N_UptakeRadius+0.5*r.D)**2;  		
+			//The root takes up all N in the newly explore volume
+			r.Uptake_N = (volume-exploredVolumeN)>0 ? aN * Math.min(1,newVolume/(volume-exploredVolumeN)) : 0;
+			//newly explored soil volume added to the fraction explored soil volume 
+			exploredVolumeN :+= newVolume;
+			//uptake added to total uptake counter
+			sumUptakeN += r.Uptake_N;
+		}
+	}
+	
+	void calcPotUptakeP(ExtendingRootOrgan r) {
+		//volume in L
+		double vol = volume*1e3;
+		//Available P
+		double aP = Math.max(0, P - P_Cmin_r * vol);
+		//root radius
+		double rad = r instanceof RootApex ? 0.5*r.D : 0.5*r.getFineRootD();
+		//newly explored soil volume by this Apex/rootsegment
+		double newVolume = r.newRootLength * Math.PI * (P_UptakeRadius+rad)**2;  		
+		//The root takes up all P in the newly explored volume
+		r.Uptake_P = (volume-exploredVolumeP)>0 ? aP * Math.min(1,newVolume/(volume-exploredVolumeP)) : 0;
+		//newly explored soil volume added to the fraction explored soil volume 
+		exploredVolumeP :+= newVolume;
+		//uptake added to total uptake counter
+		sumUptakeP += r.Uptake_P;
+	}
+	
+	void calcUptakeN(ExtendingRootOrgan r) { 
+		//volume in L
+		double vol = volume*1e3;
+		//Available N for root
+		double aN = N - Math.max(0, N_Cmin_r * vol);
+		//Uptake roots
+		double uptRoot = sumUptakeN>0 ? Math.max(0,Math.min(r.Uptake_N, aN * r.Uptake_N/sumUptakeN)) : 0;
+		
+		N :-= uptRoot;
+		Soil.exN -= uptRoot;
+		r.Uptake_N = uptRoot;
+	}
+	
+	void calcUptakeP(ExtendingRootOrgan r) {
+		//volume in L
+		double vol = volume*1e3;
+		//Available P for roots
+		double aP = Math.max(0, P - P_Cmin_r * vol);
+		//Uptake roots
+		double uptRoot = sumUptakeP>0 ? Math.max(0,Math.min(r.Uptake_P, aP * r.Uptake_P/sumUptakeP)) : 0;
+		
+		P :-= uptRoot;
+		Soil.exP -= uptRoot;
+		r.Uptake_P = uptRoot;
+		
+		setShader(new RGBAShader(1-(N/initN),1-(N/initN),1-(N/initN)));
+	}
+	
+	public RichSoil(double x, double y, double z) {
+		length=width=height=cellSize*1.001;
+		N = Soil.N/(Soil.NrCells-Soil.ExploredSoil);
+		P = Soil.P/(Soil.NrCells-Soil.ExploredSoil);
+		Soil.N -= N;
+		Soil.exN += N;
+		Soil.P -= P;
+		Soil.exP += P;
+		Soil.ExploredSoil+=1;
+		setTranslation(x,y,z);
+		setLayer(rootBoxLayer+1);
+		setShader(new RGBAShader(1-(N/initN),1-(N/initN),1-(N/initN)));
+	}
+	
+}
+
+//Soil depleted of Phosphorous
+module DepletedSoil extends ExploredSoil {
+
+	public DepletedSoil(Point3d L) {
+		length=width=height=cellSize*1.001;
+		setTranslation(L.x,L.y,L.z);
+		setLayer(rootBoxLayer);
+		setShader(WHITE);
+	}
+}
+
+/********************************************* 
+				INITIATION
+************************************************/
+
+static void initSoil() {	//@Init
+	
+	if(rootModule) {
+		Soil.resetSoil();
+	}
+}
+
+/********************************************* 
+				PARAMETERS
+************************************************/
+
+static boolean infiniteSoil 	= infinite;
+
+//Soil Grid
+static double SoilDepth			= 3;					// depth of the soil compartment in m

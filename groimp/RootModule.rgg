@@ -1,0 +1,702 @@
+import static parameters.*;
+import static environment.*;
+import static SimpleSoilModule.*;
+import static modules_organs.*;
+import static modules_base.*;
+
+import de.grogra.vecmath.Math2;
+import de.grogra.vecmath.Matrix34d;
+
+// code below adapted from De Vries (in prep)
+
+
+
+/********************************************* 
+				MODULES
+************************************************/
+
+module RootBase extends GrowingOrgan
+{	
+	//Root and soil combined, we might consider using gridpoints to make soil compartments that contain
+	//a root system to allow nitrogen not used by outcompeted plants to migrate to neighbouring gidcells
+	
+	double surfaceArea;			// root surface area
+	double volume;
+
+	double width;
+	double depth = SoilDepth;
+	
+	double rootLength;
+	double rootVolume;
+	double rhizArea;
+	
+	double Uptake_W;
+	double Uptake_N;
+	double Uptake_P;
+	double Uptake_N_MF;
+	double Uptake_P_MF;
+	double RootN;			// N allocated to roots
+	
+	double sumGrowth;
+	double excessC;
+	static double RM;
+	
+	//Monocot
+	double NrRP;
+	double ER;
+	
+	static double calcRM(double LM, int sp) {
+		//calculates root mass from leaf mass
+		return LM*RLratio[sp];		
+	}
+	
+	void calcGrowth() {
+		//converts allocated assimilates to growth
+		PlantBase pb = first((* a:PlantBase, (a[plantNumber] == plantNumber) *));
+		
+		//Structural N and P costs, should be added in all growing organs; values from Gecros
+		//pb.Ni -= growth*strucN;
+		//pb.Pi -= growth*StrucP;
+		
+		//reset counter
+		sumGrowth = 0;
+		
+		//create a root system from biomass
+		if(rootModule) [
+			//{println("Sink = "+sumGrowth);}
+			r:RootOrgan, (r.plantNumber==plantNumber) ::> r.calcSink(this); //determines sink hierarchy	
+			{Bleed(pb);} 
+			r:RootOrgan, (r.plantNumber==plantNumber) ::> r.calcGrowth(this);			
+		]
+		pb[Nroots] = RootN;
+	}
+	
+	//bleed off any excess carbon allocated to the reservePool
+	void Bleed(PlantBase pb) {
+		double r = growth>sumGrowth ? growth-sumGrowth : 0;
+		pb.reservePool += r;
+		growth -= r;
+	}
+	
+	void Uptake() {	
+		
+		if(rootModule) [
+			r:ExtendingRootOrgan, (r.plantNumber==plantNumber) ::> r.getUptake(this);
+		]
+	}
+	
+	public RootBase(Seed s) {
+		//constructor
+		species = s.species;
+		length = !rootModule ? plantDistance[species] : 0.00001;
+		width = !rootModule ? rowDistance[species] : 0;
+		volume = !rootModule ? length*width*depth : 0;
+		plantNumber = s.plantNumber;		
+	}
+	
+}==> if(!rootModule) (RU(180) M(0.001) Box(depth,length,width).(setLayer(rootLayer)));
+
+
+abstract module RootOrgan extends M()
+{
+	int plantNumber;
+	int species;
+	int strategy;
+	boolean border;
+	boolean treatment;
+	
+	int order;
+	int rank;
+	int age;
+	double ThermalAge;
+	
+	double potGrowth;
+	double Ci;					// carbon allocated to the root
+	double surfaceArea;			// root surface area
+	double crossArea;
+	double D;					// diameter
+	double radius;
+	double LD;					// life duration
+	double biomass;
+	Shader RootShader = BLACK;
+	boolean Explored = false;	//all growing roots get checked for explored soil
+	
+	double MF;
+	double FineRootLength;
+	double FineRootBiomass;
+	
+	abstract void calcSink(RootBase RS) {}
+	
+	abstract void calcGrowth(RootBase RS) {}
+	
+	void calcAge() {
+		age :+= 1;
+	}
+	
+	void update() {
+		calcAge();
+	}
+	
+	void ExploreSoil() {
+		//check location
+		Point3d loc = location(this);
+		//Check if in an explored part of the soil volume
+		if(empty((*e:ExploredSoil, (loc in volume(e))*))&&endlocation(this).z<0) {
+			//if not, explore
+			Soil.Explore(this); 
+		} else {
+			//this root is now in a piece of explored soil volume 
+			Explored = this instanceof RootApex ? false : true; 
+		}
+	}
+}
+
+/*Root organs that are a carbon sink*/
+abstract module GrowingRootOrgan extends RootOrgan
+{
+	abstract void calcSink(RootBase RS) {}
+	abstract void calcGrowth(RootBase RS) {}
+	
+	double potGrowth;
+	double pRoot;				//potential root growth
+}
+
+/*Root organs that extend the root system and therefore contribute to uptake*/
+abstract module ExtendingRootOrgan extends GrowingRootOrgan 
+{
+	double newRootLength;
+	
+	double Uptake_N;
+	double Uptake_P;
+
+	void getUptake(RootBase RS) {
+		RS.Uptake_N += Uptake_N;
+		RS.Uptake_P += Uptake_P;
+		PlantBase pb = first((* a:PlantBase, (a[plantNumber] == plantNumber) *));
+		double Nup = ((Uptake_N)/1000000)*14;
+		pb.Nsource += Nup*(1-fN);
+		pb.NuptakeTotal += Nup*(1-fN);		// keep track of total N taken up
+		RS.RootN += Nup*fN;
+		pb.Psource += ((Uptake_P)/1000000)*31;
+		resetUptake(); 
+	}
+	
+	double getFineRootD() {
+		return D*RDM1[species];
+	}
+	
+	void resetUptake() {
+		//resets uptake
+		Uptake_N := 0;
+		Uptake_P := 0;
+	}
+}
+
+/*Apices that extend the root system*/
+module RootApex extends ExtendingRootOrgan
+{
+	int GD;				// growth Duration in degreedays
+	double Cimin;		// carbon needed to make a rootSegment
+	
+	//rotation fields
+	double rotX;
+	double rotY;
+	double rotZ;
+	double bAngle;
+	
+	void calcSink(RootBase RS) {
+		//calculates the organs sink strength, scaled to root diameter
+		potGrowth = Math.max(0, EL[species]*D * Math.PI*radius**2 * RTD[species]*1e6) ;
+		
+		RS.sumGrowth += potGrowth;
+	}
+	
+	void calcGrowth(RootBase RS) {
+		//converts allocated assimilates to growth
+		double C = RS.sumGrowth>0 ? Math.min(potGrowth, RS.growth * potGrowth/RS.sumGrowth) : 0;
+		Ci += C;
+		biomass += C;
+		newRootLength = getIBD() * C/Cimin;
+		length = getIBD() * Ci/Cimin;
+		surfaceArea = length*2*Math.PI*radius;
+		Explored = RS.growth>0 ? false : true;
+	}
+	
+	/***************************
+		FUNCTIONAL RESPONSES
+	****************************/
+	
+	double getGravitropism() {
+		//Gravitropism as a function of ...
+		double RVmp = 80.236 * IBD[species];		// gravitropism multiplier; corrects for difference in root segment length; see rootLengthGravitropismRelation.xlsx
+		return  RVmp * Groot[species] *(D*1e3);
+	}
+	
+	double getAngle() {
+		//lateral root angle as a function of ...
+		return normal(angleAVG[species], angleVAR[species]);
+	}
+	
+	double getRDM() {
+		//diameter reduction of lateral roots as a function of ...
+		return RDM0[species];
+	}
+	
+	double getIBD() {
+		//distance between lateral roots, 
+		//with the highest root oder having longer segments to improve computation time
+		//double ibd = order<MaxRootOrder ? IBD[species] : IBDmax;
+		double ibd = IBD[species];
+		
+		Cimin = (ibd*Math.PI*(radius)**2)*(RTD[species]*1e6)*1.42857; //1.42857 = 1/(1-rg) with rg = 0.3; see growingOrgan
+				
+		return ibd;
+	}
+	
+	/*******************************/
+	
+	void rotate(double x, double y, double z) {
+		//set rotation
+		rotX = x; 
+		rotY = y;
+		rotZ = z;
+		setRotation(x,y,z);
+	}
+	
+	void update() {
+		super.update();
+	}
+	
+	public RootApex(Seed s, int z) {
+		//t=0 constructor
+		length = 0;
+		species = s.species;
+		D = Dinit[species];
+		radius = 0.5*D;
+		crossArea = Math.PI*radius**2;
+		order = 0;
+		rank = 1;
+		plantNumber = s.plantNumber;
+		Cimin = (IBD[species]*Math.PI*(radius)**2)*(RTD[species]*1e6)**1.42857; //1.42857 = 1/(1-rg) with rg = 0.3; see growingOrgan
+		rotX = Math.PI*random(-MCP[species],MCP[species])/180;
+		rotY = Math.PI*random(-MCP[species],MCP[species])/180;
+		rotZ = Math.PI*137.5/180;
+		surfaceArea = 1E-16;
+	}
+	
+	public RootApex(RootBase s) {
+		//t=0 constructor
+		length = 0;
+		species = s.species;
+		D = Dinit[species];
+		radius = 0.5*D;
+		crossArea = Math.PI*radius**2;
+		order = 0;
+		rank = 1;
+		plantNumber = s.plantNumber;
+		Cimin = (IBD[species]*Math.PI*(radius)**2)*(RTD[species]*1e6)**1.42857; //1.42857 = 1/(1-rg) with rg = 0.3; see growingOrgan
+		rotX = Math.PI*random(-MCP[species],MCP[species])/180;
+		rotY = Math.PI*random(-MCP[species],MCP[species])/180;
+		rotZ = Math.PI*137.5/180;
+		surfaceArea = 1E-16;
+	}
+	
+	public RootApex(RootOrgan s, double Dm, double x, double y, double z, double a) {
+		//seminar and lateral constructor
+		length = 0;
+		D = Dm;
+		radius = 0.5*D;
+		crossArea = Math.PI*radius**2;
+		order = s.order+1;
+		rank = s.rank;
+		plantNumber = s.plantNumber;
+		species = s.species;
+		Cimin = (IBD[species]*Math.PI*(radius)**2)*(RTD[species]*1e6)*1.42857; //1.42857 = 1/(1-rg) with rg = 0.3; see growingOrgan
+		rotX = x;
+		rotY = y;
+		rotZ = z;
+		bAngle = a;
+		setRotation(x+a,y,z);
+		surfaceArea = 1E-16;
+	}
+		
+} ==> Cylinder(length,radius).(setShader(BLACK), setLayer(rootBoxLayer));
+
+/*Primary root segments showing radial growth*/
+module PrimaryRootOrgan extends GrowingRootOrgan 
+{
+	void calcSink(RootBase RS) {
+		//primary roots grow radially
+		potGrowth = Math.max(0, calcRadialSink());
+
+		RS.sumGrowth += potGrowth;
+	}	
+	
+	void calcGrowth(RootBase RS) {
+		//C allocated to radial growth
+		double C = RS.sumGrowth>0 ? Math.min(potGrowth, RS.growth * potGrowth/RS.sumGrowth) : 0;
+		biomass += C;
+
+		radius = Math.sqrt(biomass/(length*Math.PI*RTD[species]*1e6));
+		D = radius*2;
+		surfaceArea = (length * 2*Math.PI*radius);
+	}
+	
+	double calcRadialSink() {
+		double sumArea = sum((*this (-->)* a:RootApex*)[crossArea]);
+		double newMass = length * sumArea*RTD[species]*1e6;
+		return newMass-biomass;
+	}
+	
+	void update() {
+		super.update();
+	}
+	
+	public PrimaryRootOrgan(RootApex a) {
+		//constructor
+		species = a.species;
+		length = a.getIBD();
+		rank = a.rank+1;
+		order = a.order;
+		plantNumber = a.plantNumber;
+		D = a.D;
+		radius = 0.5*D;
+		surfaceArea = (length * (2 * Math.PI * radius));
+		Ci = a.Cimin;
+		biomass = a.Cimin;
+		RootShader = a.RootShader;
+	}
+	
+} ==> Cylinder(length,radius).(setShader(BLACK), setLayer(rootBoxLayer));	
+
+/*Growing secondary root segments*/
+module SecondaryRootOrgan extends ExtendingRootOrgan 
+{
+	double maxFineRootBiomass;
+	double fFRS = 1.1;				//fraction by which to overshoot sink strength to prevent growth saturation
+
+	void calcSink(RootBase RS) {
+		//secondary roots grow tertiary roots
+		potGrowth = Math.max(0, calcFineRootSink());
+
+		RS.sumGrowth += potGrowth;
+	}	
+	
+	void calcGrowth(RootBase RS) {
+		//C allocated to fine root growth
+		double C = RS.sumGrowth>0 ? Math.min(potGrowth, RS.growth * potGrowth/RS.sumGrowth) : 0;
+		biomass += C;
+		
+		FineRootBiomass += C;
+		newRootLength = C/((Math.PI*(getFineRootD()/2)**2)*RTD[species]*1e6);
+		FineRootLength += newRootLength;
+		surfaceArea = (length * 2 * Math.PI * radius) + (FineRootLength * (2 * Math.PI * getFineRootD()/2));
+			
+		//replace the rootsegment if tert roots have formed
+		if(FineRootBiomass>=maxFineRootBiomass*(1/fFRS)) {
+			replace();
+		}
+	}
+	
+	double calcFineRootSink() {
+		//potential increase in fineroot biomass, 
+		//maxfinertbiomass is increased by a factor 1.1111 to prevent approaching but never reaching the maximum value
+		//maxfinerootbiomass is 0 for primary roots and >0 for secondary roots
+		return Math.max(0,maxFineRootBiomass*fFRS-FineRootBiomass);
+	}
+	
+	void replace() [
+		//Change this rootsegment to an oldrootsegment
+		this ==> oldRootOrgan(this).(setTransform(this.getLocalTransformation()));
+	]
+	
+	void update() {
+		super.update();
+	}
+	
+	public SecondaryRootOrgan(RootApex a) {
+		//constructor
+		species = a.species;
+		length = a.getIBD();
+		rank = a.rank+1;
+		order = a.order;
+		plantNumber = a.plantNumber;
+		D = a.D;
+		radius = 0.5*D;
+		surfaceArea = (length * (2 * Math.PI * radius));
+		Ci = a.Cimin;
+		biomass = a.Cimin;
+		RootShader = a.RootShader;
+		maxFineRootBiomass = order>0 ? fineRootDensity[species]*length * Math.PI*(getFineRootD()/2)**2 * (RTD[species]*1e6) : 0;
+	}
+	
+} ==> Cylinder(length,radius).(setShader(BLACK), setLayer(rootBoxLayer));	
+
+/*Secondary root segments that have stopped growing tertiary roots*/ 
+module oldRootOrgan extends RootOrgan
+{
+	void calcSink(RootBase RS) {}
+	
+	void calcGrowth(RootBase RS) {}
+	
+	double maxFineRootBiomass;
+	
+	void update() {
+		super.update();
+	}
+	
+	public oldRootOrgan(SecondaryRootOrgan a) {
+		//constructor
+		species = a.species;
+		length = a[length];
+		rank = a.rank;
+		order = a.order;
+		plantNumber = a.plantNumber;
+		D = a.D;
+		radius = 0.5*D;
+		surfaceArea = a.surfaceArea;
+		Ci = a.Ci;
+		biomass = a.biomass;
+		RootShader = a.RootShader;
+		FineRootLength = a.FineRootLength;
+		FineRootBiomass = a.FineRootBiomass;
+		MF = a.MF;
+		maxFineRootBiomass = a.maxFineRootBiomass;
+	}
+} ==> Cylinder(length,radius).(setShader(BLACK), setLayer(rootBoxLayer));
+
+/********************************************* 
+				DEVELOPMENT
+************************************************/
+
+static void DevelopRoot()	//@Develop
+[		
+	//DevelopRootApex
+	ap:RootApex, (ap.length>ap.getIBD()) ==> 
+		while(ap.Ci>ap.Cimin)(
+			{	//random variation in diamter and direction
+				double DM = normal(ap.getRDM()*ap.D, ap.getRDM()*ap.D*sdD[ap.species]);
+				int s = ap.species;
+				double x = Math.PI*random(-MCP[ap.species],MCP[ap.species])/180;
+				double y = Math.PI*random(-MCP[ap.species],MCP[ap.species])/180;
+				double z = 0;//Math.PI*137.5/180;
+			}
+			
+			//gravitropism
+			RV(ap.getGravitropism())
+			
+			//rootsegment initiation
+			if(ap.order==0) (
+				r:PrimaryRootOrgan(ap).(setTransform(ap.getLocalTransformation()))
+			)else if(ap.order==1) (
+				r:SecondaryRootOrgan(ap).(setTransform(ap.getLocalTransformation()))
+			)
+			
+			//head angle rotation and branch apex initiation
+			if(ap.order<MaxRootOrder[ap.species]) (
+				[ RH(137.5*ap.rank) a:RootApex(ap,DM,x,y,z,Math.PI*ap.getAngle()/180) ]
+			)
+			
+			{	//update apex variables
+				derive();
+				ap.rank++;
+				ap.Ci -= ap.Cimin;
+				ap.biomass -= ap.Cimin;
+				ap.rotate(x,y,z);
+			}
+		)
+		
+		//apex
+		ap
+		
+		{	//update apex variables
+			derive();
+			//ap.GD+=GDD; 
+			ap.length = ap.getIBD()*ap.Ci/ap.Cimin;
+			derive();
+		};
+	
+		
+	//InitPrimordia (Monocot)
+	rb:RootBase, (rb.NrRP<MP[rb.species] && rb.RM-rb.biomass>0) ==> rb {rb.ER += ER[rb.species]*(tav-tb[rb.species]);} //make new seminal roots based on thermal time
+	
+		//initiate seminal roots
+		do(
+		//random variation in diameter
+		{ double DM = Dinit[rb.species]; }
+			
+			if(rb.ER>1) (
+			[	//initiate a new apex
+				RH(137.5*rb.NrRP+random(-10,10)) 
+				RU(60)
+				//RU(random(5,45)) 
+				RootApex(rb)
+				{ 
+					rb.ER--; 
+					rb.NrRP++; 
+				}
+			])
+			
+		) while( rb.ER>1 )
+		;
+	
+	//Consolidate changes
+	{derive();}
+	//redirect roots not in the soil volume
+	a:RootApex ,(Barrier(a)) ::> {rootDeflection(a);}
+	//Consolidate changes
+	{derive();}
+	//redirect roots not in the soil volume
+	a:RootApex ,(infiniteSoil) ::> {infiniteRoot(a);} 
+	//Consolidate changes
+	{derive();}
+	//explore new soil
+	a:RootOrgan, (!a.Explored) ::> { a.ExploreSoil(); }
+		
+]
+
+/********************************************* 
+				METHODS
+************************************************/
+
+static void infiniteRoot(RootApex a) {
+	
+	//RootApex location components
+/*Changed from endlocation to location*/
+	double ex = location(a).x;
+	double ey = location(a).y;
+	
+	if((ex<0||ex>longestStripLength||ey<0||ey>fieldWidth)) [
+	
+	{//select the rootsegment that is on the edge of the soil volume
+		RootOrgan R = first((* a (<)* :(r:RootOrgan), (
+		(location(r).x>=0&&location(r).x<=longestStripLength&&location(r).y>=0&&location(r).y<=fieldWidth) &&
+		(endlocation(r).x<0||endlocation(r).x>longestStripLength||endlocation(r).y<0||endlocation(r).y>fieldWidth) )*)); 
+	
+/*Error message when a root cannot find the segment that exits the soil volume*/
+		if(R==null) {println("An out of bounds root cannot relocate");}
+	}
+	
+	//insert a Null node in front of the Rootsegment to allow transformation
+	R ==> m:Null R;
+	
+	//derive to instantiate the null node
+	{derive();}
+	
+	//Transform the Rootsegment
+	m:Null R ::> {
+		double tx = endlocation(R).x<0 ? 1 : endlocation(R).x>longestStripLength ? -1 : 0;
+		double ty = endlocation(R).y<0 ? 1 : endlocation(R).y>fieldWidth ? -1 : 0;
+		
+		//Translation vector in global coordinates
+		Point3d p = new Point3d(tx*longestStripLength,ty*fieldWidth,0);
+		
+		//axes of the original cartesian system
+		Vector3d i = new Vector3d(1,0,0);
+		Vector3d j = new Vector3d(0,1,0);
+		Vector3d k = new Vector3d(0,0,1);
+		
+		//axes of the transformed cartesian system
+		Matrix4d M = transformation(m);
+		Vector3d I = new Vector3d(M.m00,M.m10,M.m20);
+		Vector3d J = new Vector3d(M.m01,M.m11,M.m21);
+		Vector3d K = new Vector3d(M.m02,M.m12,M.m22);
+		
+		//the vectors that needs to be transformed 
+		Vector3d v = new Vector3d(p.x,p.y,p.z);
+		Vector3d V = new Vector3d();
+		
+		//Transformation matrix
+		V = transformVector2(v,i,j,k,I,J,K);
+		
+		//Translate the Null node		
+		m.setTranslation(V.x,V.y,V.z);
+	}
+	
+	//derive to instantiate the new apex location
+	{derive();}
+	]
+}
+
+static Vector3d transformVector2(Vector3d v, Vector3d i, Vector3d j, Vector3d k, Vector3d I, Vector3d J, Vector3d K) {
+	//Transforms the vector v from carthesian system i,j,k to vector V in terms of carthesian system I,J,K
+	Vector3d V = new Vector3d();
+	V.x = i.dot(I)*v.x + j.dot(I)*v.y + k.dot(I)*v.z;
+	V.y = i.dot(J)*v.x + j.dot(J)*v.y + k.dot(J)*v.z;
+	V.z = i.dot(K)*v.x + j.dot(K)*v.y + k.dot(K)*v.z;
+
+	return V;
+}
+
+static boolean Barrier(RootApex a) {
+	//apex location
+	Point3d loc = endlocation(a);
+	
+	//when the infiniteSoil is used, only roots growing to the surface are deflected
+	double x = !infiniteSoil&&(loc.x>longestStripLength||loc.x<0) ? 1 : 0;
+	double y = !infiniteSoil&&(loc.y>fieldWidth||loc.y<0) ? 1 : 0;
+	double z = loc.z<(-SoilDepth)||loc.z>0 ? 1 : 0;
+	
+	return (x>0||y>0||z>0) ? true : false;
+}
+
+static boolean deflectingRootOrgan(RootOrgan a) {
+	//rootsegment location
+	Point3d loc = location(a);
+	Point3d endloc = endlocation(a);
+	
+	//when the infiniteSoil is used, only roots growing to the surface are deflected
+	double x = !infiniteSoil&&(loc.x<=longestStripLength&&loc.x>=0)&&(endloc.x>longestStripLength||endloc.x<0) ? 1 : 0;
+	double y = !infiniteSoil&&(loc.y<=fieldWidth&&loc.y>=0)&&(endloc.y>fieldWidth||endloc.y<0) ? 1 : 0;
+	double z = (loc.z>=(-SoilDepth)&&loc.z<=0)&&(endloc.z<(-SoilDepth)||endloc.z>0) ? 1 : 0;
+	
+	return (x>0||y>0||z>0) ? true : false;
+}
+
+static void rootDeflection(RootApex a) {
+//deflects a root if it hits the impenetrable surface of the pot walls or soil surface
+	
+	//find the root segment on the pots edge
+	RootOrgan b = first((* a (<)* r:RootOrgan, (deflectingRootOrgan(r))*)); 
+	
+	//variable initiation
+	Point3d loc = endlocation(a);
+	Matrix4d dir = new Matrix4d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1);
+	float e = 1;	//strength of the deflection
+	
+	//determine the axis of deflection
+	//when the infiniteSoil is in used, only roots growing to the surface and the bottom are deflected
+	double x = !infiniteSoil&&(loc.x>longestStripLength||loc.x<0) ? 1 : 0;
+	double y = !infiniteSoil&&(loc.y>fieldWidth||loc.y<0) ? 1 : 0;
+	double z = loc.z<(-SoilDepth)||loc.z>0 ? 1 : 0;
+	
+	//initiate the plane along which deflection will take place
+	Point3d plane = new Point3d(x,y,z);
+	
+	//do the deflection
+	if(b!=null) {
+		orthogonalTropism2(transformation(a),plane,e,dir);
+		b[transform] = new TMatrix4d(dir);
+	}
+	
+	derive();
+}
+
+static boolean orthogonalTropism2(Matrix34d m, Tuple3d direction, float e, Matrix4d out)
+{ // alternative orthogonal tropism method
+	Vector3d dir = new Vector3d (direction.z * m.m12 - direction.y * m.m22,
+		direction.x * m.m22 - direction.z * m.m02, direction.y * m.m02
+			- direction.x * m.m12);
+	e *= Math.acos((m.m02 * direction.x + m.m12 * direction.y + m.m22 * direction.z)
+					/ Math.sqrt ((m.m02 * m.m02 + m.m12 * m.m12 + m.m22 * m.m22) 
+					* (direction.x * direction.x + direction.y * direction.y + direction.z * direction.z)))
+					- 0.5 * Math.PI;
+	if (e * e >= 1e-20)
+	{
+		Math2.invTransformVector (m, dir);
+		out.set (new AxisAngle4d (dir, e));
+		return true;
+	}
+	return false;
+}
+

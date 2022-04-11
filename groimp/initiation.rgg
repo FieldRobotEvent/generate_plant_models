@@ -1,0 +1,465 @@
+
+import static modules_base.*;
+import static modules_organs.*;
+import static modules_light.*;
+import static parameters.*;
+import static environment.*;
+import static SimpleSoilModule.*;
+import static parameters0.*;
+import static parameters1.*;
+import static parameters2.*;
+import static parameters3.*;
+import static parameters4.*;  
+import static parameters5.*;  
+import static parameters6.*; 
+import static parameters7.*; 
+import static parameters8.*; 
+import static parameters9.*; 
+import static parameters10.*;
+import static parameters11.*;
+import static main.*;
+
+static void resetCounters()
+{
+	for (int s=0; s<=totalSpecies-1; s++)
+	{
+		totalPlants[s] = 0;
+		area[s] = 0;
+		dens[s] = 0;
+	}
+	globalTotalPlants = 0;
+	totalArea = 0;
+	fieldWidth = 0;
+	nrWeedPlants = 0;
+	time = 0;
+	tt = 0;
+	dayOfYear = startingDayOfYear;
+	longestStripLength = 0;
+	//setSeed(0);
+}
+
+static void initDatasets()
+{
+		fieldOutput.clear();
+		fieldOutput.(
+			setColumnKey(0,"time(d)"),
+			setColumnKey(1,"species"),
+			setColumnKey(2,"LAI"),
+			setColumnKey(3,"nrShoots"),
+			setColumnKey(4,"fAbs"),
+			setColumnKey(5,"assCO2(umol/m2)"),
+			setColumnKey(6,"biomAbove(gr/m2)"),
+			setColumnKey(7,"yield(gr/m2)"),
+			setColumnKey(8,"harvestIndex"),
+			setColumnKey(9,"leafArea"),
+			setColumnKey(10,"fieldRFR")
+		);
+		plantOutput.clear();
+		plantOutput.(
+			setColumnKey(0,"time(d)"),
+			setColumnKey(1,"tt(dd)"),
+			setColumnKey(2,"plant#"),
+			setColumnKey(3,"strip#"),
+			setColumnKey(4,"row#"),
+			setColumnKey(5,"pos#"),
+			setColumnKey(6,"species"),
+			setColumnKey(7,"weed"),
+			setColumnKey(8,"age(dd)"),
+			setColumnKey(9,"age(days)"),
+			setColumnKey(10,"nrBranches"),
+			setColumnKey(11,"leafArea(m2)"),
+			setColumnKey(12,"fpar"),
+			setColumnKey(13,"accumulated PAR(mol)"),
+			setColumnKey(14,"rfr"),
+			setColumnKey(15,"biom(mg)"),
+			setColumnKey(16,"yield(mg)"),
+			setColumnKey(17,"leafMass(mg)"),
+			setColumnKey(18,"stemMass(mg)"),
+			setColumnKey(19,"rootMass(mg)"),
+			setColumnKey(20,"shootRootRatio(mg)"),
+			setColumnKey(21,"aboveBiom(mg)"),
+			setColumnKey(22,"Nsource(mg)"),
+			setColumnKey(23,"Total N uptake(mg)"),
+			setColumnKey(24,"Root length(m)"),
+			setColumnKey(25,"Plant height"),
+			setColumnKey(26,"Nphoto(mg)"),
+			setColumnKey(27,"Nstem(mg)"),
+			setColumnKey(28,"Ngrain(mg)"),
+			setColumnKey(29,"Nroots(mg)"),
+			setColumnKey(30,"bladeMass(mg)")
+
+		);
+		combiLight.clear();
+		combiLight.(
+			setColumnKey(0,"time(d)"),
+			setColumnKey(1,"tt(dd)"),
+			setColumnKey(2,"nr"),
+			setColumnKey(3,"nrX"),
+			setColumnKey(4,"nrY"),
+			setColumnKey(5,"distX"),
+			setColumnKey(6,"distY"),
+			setColumnKey(7,"tile_fpar"),
+			setColumnKey(8,"tile_rfr"),
+			setColumnKey(9,"sensor_fpar"),
+			setColumnKey(10,"sensor_rfr")
+		);
+		lightTransectX.clear(); chart(lightTransectX,SCATTER_PLOT);
+		lightTransectX.(setColumnKey(0,"fPAR"), setColumnKey(1,"RFR"));
+		lightTransectY.clear(); chart(lightTransectY,SCATTER_PLOT);
+		lightTransectY.(setColumnKey(0,"fPAR"), setColumnKey(1,"RFR"));
+		simulationRate.clear(); chart(simulationRate,XY_PLOT);
+		simulationRate.setColumnKey(0,"simRate (steps/s)");
+		plantBiomass.clear(); chart(plantBiomass,XY_PLOT);
+		reserves.clear(); chart(reserves,XY_PLOT);
+		photo.clear(); chart(photo,XY_PLOT);
+		sourceSink.clear(); chart(sourceSink,XY_PLOT);
+		//sourceSink.setColumnKey(0,"sourceSinkRatio");
+		plantYield.clear(); chart(plantYield,BAR_PLOT);
+		plantYield.setColumnKey(0,"yield");
+		plantHeight.clear(); chart(plantHeight,XY_PLOT);
+		plantBranches.clear(); chart(plantBranches,XY_PLOT);
+		apicalDominance.clear(); chart(apicalDominance,XY_PLOT);
+		plantSAS.clear(); chart(plantSAS,XY_PLOT);
+		plantRFR.clear(); chart(plantRFR,XY_PLOT);
+		plantNitro.clear(); chart(plantNitro,XY_PLOT);
+		plantNitroTotal.clear(); chart(plantNitroTotal,XY_PLOT);		
+		plantNitroRatio.clear(); chart(plantNitroRatio,XY_PLOT);
+		plantRootLength.clear(); chart(plantRootLength,XY_PLOT);
+		plantFabs.clear(); chart(plantFabs,XY_PLOT);
+		plantCPAR.clear(); chart(plantCPAR,XY_PLOT);
+		plantLeafArea.clear(); chart(plantLeafArea,XY_PLOT);
+
+		fieldFabs.clear(); chart(fieldFabs,XY_PLOT);
+		fieldAssim.clear(); chart(fieldAssim,XY_PLOT);
+		fieldRFR.clear(); chart(fieldRFR,XY_PLOT);
+		fieldYield.clear(); chart(fieldYield,XY_PLOT);
+		fieldBiomass.clear(); chart(fieldBiomass,XY_PLOT);
+		laidata.clear(); chart(laidata,XY_PLOT);
+		
+		leafAreaProfile.clear(); chart(leafAreaProfile,SCATTER_PLOT);
+		internodeLengthProfile.clear(); chart(internodeLengthProfile,SCATTER_PLOT);
+		leafLightProfile.clear(); chart(leafLightProfile,SCATTER_PLOT);
+		leafNProfile.clear(); chart(leafNProfile,SCATTER_PLOT);
+		for (int s=0; s<=totalSpecies-1; s++) {
+			if (spPresence[s] == true) {
+				laidata.(setColumnKey(s,speciesNames[s]));
+				fieldFabs.(setColumnKey(s,speciesNames[s]), setColumnKey(totalSpecies,"overall"));
+				fieldRFR.(setColumnKey(s,speciesNames[s]));
+				fieldAssim.(setColumnKey(s,speciesNames[s]+" (mol/m2)"));
+				fieldYield.(setColumnKey(s,speciesNames[s]+" (g/m2)"));
+				fieldBiomass.(setColumnKey(s,speciesNames[s]+" (g/m2)"));
+			}
+		}
+}
+
+static void initiate()
+[
+	{
+		System.gc();
+		clearConsole();
+		resetCounters();
+		calcNrSpecies();
+		calcHalt();
+		calcTemp();
+		//diffAngle = readData("hemisphereWopke.csv");
+		calcLightSourceAngles();
+	}
+	
+	Axiom ==>
+	temp
+	// insert light sources
+	[	
+		RH(90) lt:Translate
+		dr:DirectLight
+		dif:DiffuseLight
+	]
+	
+	// insert reference light sensor
+	[
+		Translate(-2,-2,0) rt:RefTile {rt.initiate();}
+	]
+	
+	// insert cloner
+	cl:GridClonerNode
+	
+	// start field setup containing plants and tiles arranged in rows, which are arranged in strips (X rows of the same species)
+	fb:FieldBase
+	[	
+		{
+			int i = 0;
+		}
+		for (int strip=1; strip<=nrStrips; strip++) (
+		{
+			int species = speciesSequence[strip-1];
+		}
+		
+		//setup of a strip
+		if (strip != 1) (Translate(0,0.5*rowDistance[species],0))
+		if (nrStrips != 1) {fieldWidth += 0.5*rowDistance[species];}
+		for (int row=1; row<=nrRows[species]; row++) (
+			if (strip == 1 && row == 1) 
+			{
+				originX = -0.5*plantDistance[species];
+				originY = -0.5*rowDistance[species];
+			}
+			
+			//setup of a row
+			[
+				if (plantDistance[species] < maxPlantDist) (Translate(-0.5*(maxPlantDist-plantDistance[species]),0,0))
+				if (hexa[species] == true && row%2 == 0) (Translate(0.5*plantDistance[species],0,0))
+				for (int pos=1; pos<=nrPlants[species]; pos++) (
+				{double q = random(0,1);}
+					[
+						{i++;}
+						// add tiles associated to a plant
+						if (iTile == false) (
+							[
+								{double tileWidth = plantDistance[species]/nrTiles;}
+								Translate(-0.5*(nrTiles-1)*tileWidth,0,0)
+								for (1:nrTiles) (
+									[
+										Translate(0,0,0.0005)
+										for (1:nrTiles) (
+											t:Tile
+											Translate(plantDistance[species]/nrTiles,0,0)
+											{
+												if (checker == true) {
+													if ( 
+													(Math.ceil((pos-1)/checkerSize)%2 == 0 && Math.ceil((row-1)/checkerSize)%2 != 0)
+													||
+													(Math.ceil((pos-1)/checkerSize)%2 != 0 && Math.ceil((row-1)/checkerSize)%2 == 0) 
+													)
+													{
+														species = checkerSpecies;
+													}
+												}
+												if (mix == true) {
+													if (q > mixProp)
+													{
+														species = mixSpecies;
+													}
+												}
+												t.initiate(species, i, row, pos, strip);
+												species = speciesSequence[strip-1];
+											}
+										)
+									]
+									Translate(0,rowDistance[species]/nrTiles,0)
+								)
+							]
+						)
+						// add plants
+							pb:PlantBase
+							rh:RH(random(0,360))
+							s:Seed
+							{
+								if (checker == true) {
+									if (
+									(Math.ceil((pos-1)/checkerSize)%2 == 0 && Math.ceil((row-1)/checkerSize)%2 != 0)
+									||
+									(Math.ceil((pos-1)/checkerSize)%2 != 0 && Math.ceil((row-1)/checkerSize)%2 == 0)
+									)
+									{
+										species = checkerSpecies;
+									}
+								}
+								if (mix == true) {
+									if (q > mixProp)
+									{
+										species = mixSpecies;
+									}
+								}
+								s.initiate(species, i);
+								pb.initiate(species, false, s, i, row, pos, strip);
+								pb.initialAngle = rh.angle;
+								totalPlants[species]++;
+								plantBiomass.setColumnKey(i,i); reserves.setColumnKey(i,i); sourceSink.setColumnKey(i,i);
+								plantLeafArea.setColumnKey(i,i); plantHeight.setColumnKey(i,i); plantBranches.setColumnKey(i,i); 
+								plantRFR.setColumnKey(i,i);	plantFabs.setColumnKey(i,i); plantSAS.setColumnKey(i,i); 
+								species = speciesSequence[strip-1];
+								if (randomArrangement == true) {
+									double minPos = (pos-0.5) * plantDistance[species];
+									double maxPos = (nrPlants[species] - (pos-0.5)) * plantDistance[species];
+									double minRow = (row-0.5) * rowDistance[species];
+									double maxRow = (nrRows[species] - (row-0.5)) * rowDistance[species];									
+									pb.setTranslation(random(-minPos,maxPos),random(-minRow,maxRow),0);
+								}
+							}
+						
+					]
+					Translate(plantDistance[species],0,0)
+					)
+			]
+			if (row != nrRows[species]) (
+				Translate(0,rowDistance[species],0)
+				{
+					fieldWidth += rowDistance[species];
+				}
+			)
+		)
+		Translate(0,0.5*rowDistance[species]+stripDistance,0)
+		{
+			if (nrStrips == 1) {
+				fieldWidth += rowDistance[species];
+			} else {
+				fieldWidth += 0.5*rowDistance[species] + stripDistance;
+			}
+		}
+	)
+	]
+	
+	// calculations of field properties
+	{
+		for (int s=0; s<=totalSpecies-1; s++)
+		if (spPresence[s] == true && s != weedSpecies) {
+			{
+				globalTotalPlants += totalPlants[s];
+				area[s] = rowDistance[s] * plantDistance[s] * totalPlants[s];
+				dens[s] = 1 / (rowDistance[s] * plantDistance[s]);
+				double linDens = 1 / plantDistance[s];
+				double linDensStrip = linDens * nrRows[s];
+				overallDens[s] = linDensStrip / fieldWidth;
+				if (checker == true) {dens[s] /= 2;}
+				if (mix == true) {
+					if (s == mixSpecies) {
+						dens[s] *= 1-mixProp;
+					} else {
+						dens[s] *= mixProp;
+					}
+				}
+				relDens[s] = overallDens[s] / dens[s];
+				totalArea += area[s];
+				stripLength[s] = plantDistance[s] * nrPlants[s];
+				longestStripLength = Math.max(stripLength[s],longestStripLength);
+				if (nrStrips == 1)
+				{
+					stripWidth[s] = rowDistance[s] * nrRows[s];
+				} else {
+					stripWidth[s] = rowDistance[s] * (nrRows[s]-1);
+				}
+			}
+		}
+	}
+	
+	// add tiles not associated to a plant; include sensors
+	if (iTile == true)
+	(
+		TileBase
+		// tiles in 2D grid
+		[
+			Translate(-offSetX,-offSetY,0)
+			{int j=1; int x=1; int y=1;}
+			for (1:nrY) (
+				[
+					for (1:nrX) (
+						cs:CombiSensor {cs.initiate(j,x,y);}
+						it:ITile {it.initiate(j,x,y);}
+//						[
+//							Translate(0.5*tSizeX,0.5*tSizeY,0)
+//							ls:LightSensor {ls.initiate(j,x,y,0);}
+//						]
+						Translate(tSizeX,0,0)
+						{x++;j++;}
+					)
+				]
+				Translate(0,tSizeY,0)
+				{y++;x=1;}
+			)
+		]
+		// sensors in 3D grid
+		[
+			Translate(-offSetX,-offSetY,0)
+			{int jj=1; int xx=1; int yy=1; int zz=0;}
+			for (1:nrZ) (
+				[
+			for (1:nrY) (
+				[
+					for (1:nrX) (
+						[
+							Translate(0.5*tSizeX,0.5*tSizeY,0.02)
+							ls:LightSensor {ls.initiate(jj,xx,yy,zz);}
+						]
+						{xx++;jj++;}
+						Translate(tSizeX,0,0)
+					)
+				]
+				Translate(0,tSizeY,0)
+				{yy++;xx=1;}
+					)
+				]
+				Translate(0,0,tSizeZ)
+				{zz++;yy=1;xx=1;}
+			)
+		]
+	)
+	
+	// add weeds (random locations)
+	if (weeds == true)
+	(
+		{
+			nrWeedPlants = (int)(Math.round(weedDens * totalArea));
+			area[weedSpecies] = totalArea;
+			dens[weedSpecies] = weedDens;
+		}
+		for (1:nrWeedPlants) (
+			[
+				{
+					double x = random(0,longestStripLength)+originX;
+					double y = random(0,fieldWidth)+originY;
+				}
+				pb:PlantBase
+				RH(random(0,360))
+				s:Seed
+				{
+					totalPlants[weedSpecies]++;
+					i++;
+					s.initiate(weedSpecies, 0);
+					pb.initiate(weedSpecies, true, s, i, 0, 0, 0);
+					pb.setTranslation(x,y,0);
+				}
+			]
+		)
+		{globalTotalPlants += totalPlants[weedSpecies];}
+	)
+	
+	{
+		// set light source locations and initiate
+		updateIncomingLight();
+		lt.translateX = 0.5*fieldWidth*(infinite?nrClones:1);
+		lt.translateY = -0.5*longestStripLength*(infinite?nrClones:1);
+		lt.translateZ = 0;
+		dr.initiate(3*Math.max(longestStripLength,fieldWidth));
+		dr.update();
+		dif.initiate(3*Math.max(longestStripLength,fieldWidth));
+		dif.update();
+		
+		// position canopy
+		fb.setTranslation(-originX,-originY,0);
+		
+		// set the GridCloner properties
+		cl.setXCount(infinite?nrClones:1);
+		cl.setXDistance(longestStripLength);
+		cl.setYCount(infinite?nrClones:1);
+		cl.setYDistance(fieldWidth);
+		cl.setLayer(15);
+	}
+	
+	if(rootModule == true) {
+		initSoil();
+	}
+
+	{
+		if (randomArrangement == true) {
+			derive();
+			for (int s=0; s<=totalSpecies-1; s++)
+			{
+				totalPlants[s] = count( (* pb:PlantBase, (pb.species == s) *) );
+			}
+		}
+		//if (weeds == true) {
+			//derive();
+			//totalPlants[weedSpecies] = count( (* pb:PlantBase, (pb.species == weedSpecies) *) );
+		//}
+	};
+]
+

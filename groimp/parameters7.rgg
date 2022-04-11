@@ -1,0 +1,97 @@
+import static parameters.*;
+
+/* weed; general dicot, for easy comparison to cereal of the effect of one parameter change */
+
+{
+	// field parameters
+	nrRows[weed] =                nrRows[cereal];                    // number of rows
+	nrPlants[weed] =               nrPlants[cereal];               // number of plants in a row
+	rowDistance[weed] =          rowDistance[cereal];            // distance between rows
+	plantDistance[weed] =        plantDistance[cereal];       // distance between plants in a row
+	delay[weed] =                  delay[cereal];                // germination delay after start of simulation (in days, to represent late sowing)
+	harvest[weed] =              harvest[cereal];                 // duration, i.e. harvest/removal time after emergence (in days)
+	hexa[weed] =               hexa[cereal];                 // true: hexagonal layout, rectangular otherwise
+	offspotIntraRow[weed] = 		offspotIntraRow[cereal]; 		    	// fraction of plant distance the plant seed is off-spot
+	offspotInterRow[weed] = 		offspotInterRow[cereal];		    	// fraction of row distance the plant seed is off-spot
+	                                                                       
+	// plant parameters                // plant parameters                 
+	determinate[weed] = 	determinate[cereal];			// TRUE = determinate, FALSE = indeterminate
+	plastochron[weed] =          plastochron[cereal];             // time between creation of two phytomers (dd)
+	phyllochron[weed] = 			phyllochron[cereal];			// time between appearance of two leaves (dd)
+	finalPhytNum[weed] =       finalPhytNum[cereal];         // final number of main stem vegetative phytomers
+	nrShortInternodes[weed] =      nrShortInternodes[cereal];        // number of bottom internodes that should not elongate 
+                                                                           
+	wmaxRoot[weed] =           wmaxRoot[cereal];             // maximum root system biomass
+	wmaxFlower[weed] =        wmaxFlower[cereal];          // maximum flower/fruit biomass
+	wmaxInt[weed] =             wmaxInt[cereal];               // maximum internode biomass
+	wmaxLeaf[weed] =             wmaxLeaf[cereal];               // maximum leaf biomass
+	teRoot[weed] =              teRoot[cereal];                // root growth duration
+	teFlower[weed] =             teFlower[cereal];               // flower/fruit growth duration
+	teInt[weed] =               teInt[cereal];                  // internode growth duration
+	teLeaf[weed] =              teLeaf[cereal];                 // leaf growth duration
+                                       
+	maxWidthInt[weed] = 		maxWidthInt[cereal];			// maxium internode width
+	specificInternodeLength[weed] =		specificInternodeLength[cereal];   // internode ratio length / biomass (mm/mg)
+
+	amax[weed] =                  amax[cereal];                    // max photosynthesis rate
+	eff[weed] =               eff[cereal];                   // initial light use efficiency (initial slope of light response curve)
+	C4[weed] = 			C4[cereal];							// false: C3, true: C4 (parameter only valid when FvCB is true)
+	nitro[weed] = 		nitro[cereal];					// leaf nitrogen mass fraction at top of canopy
+
+	LMA[weed] =                    LMA[cereal];                      // leaf mass per unit area (mg / cm2)
+	leafLife[weed] =              leafLife[cereal];                 // life span of a leaf since appearance (expressed as X times its growth duration (te))
+	lwRatio[weed] =              lwRatio[cereal];                  // ratio between leaf blade length and width
+	maxWidth[weed] =           maxWidth[cereal];              // location on the leaf where width is maximal (fraction of length)
+	shapeCoeff[weed] =          shapeCoeff[cereal];             // leaf shape coefficient (0 = rectangular, high value = pinched)
+	leafCurve[weed] =         leafCurve[cereal];               // leaf curvature - angle between bottom and top of leaf blade (0 = flat)
+
+	rankLower[weed] = rankLower[cereal];				// final phtyomer that has properties of lower phytomers (e.g. nr of leaflets, leaf angle, etc) 
+
+	leafAngleLower[weed] = leafAngleLower[cereal];		// insertion angle of lower leaves (90 = horizontal)
+	leafAngleUpper[weed] = leafAngleUpper[cereal];		// insertion angle of upper leaves (90 = horizontal)
+
+	nrLeafletsLower[weed] = nrLeafletsLower[cereal];				 // number of leaflets per leaf for the lower phytomers
+	nrLeafletsUpper[weed] = nrLeafletsUpper[cereal];				 // number of leaflets per leaf for the upper phytomers
+	petioleFraction[weed] = 		petioleFraction[cereal];		 // fraction of biomass partitioned to the petiole
+	petioluleFraction[weed] = 	petioluleFraction[cereal];	 // fraction of biomass partitioned to the petiolule
+	specificPetioleLength[weed] =	specificPetioleLength[cereal]; // specific petiole length (mm/mg)
+	specificPetioluleLength[weed] = specificPetioluleLength[cereal];// specific petiolule length (mm/mg)
+	
+	nrLeavesLower[weed] =		nrLeavesLower[cereal];			// number of leaves per phytomer for the lower phytomers
+	nrLeavesUpper[weed] = 		nrLeavesUpper[cereal];			// number of leaves per phytomer for the upper phytomers
+	phyllotaxisLower[weed] =     phyllotaxisLower[cereal];            // angle between consecutive leaves along a stem for the lower phytomers
+	phyllotaxisUpper[weed] =     phyllotaxisUpper[cereal];            // angle between consecutive leaves along a stem for the upper phytomers
+	                                   
+	varDelay[weed] =             varDelay[cereal];                 // max variation in germination delay (in days, 0 = simultaneous germination)
+	seedMass[weed] =            seedMass[cereal];              // seed endosperm mass in mg
+	                                   
+	SASextend[weed] = 			SASextend[cereal];				// toggle internode SAS extention response
+	                                   
+	branching[weed] = 		branching[cereal];			 // toggle branching
+	tillersOnly[weed] = 		tillersOnly[cereal];		// true: bud break only if parent internode has length 0 (= tillering)
+	dominance[weed] = 			dominance[cereal];				// minimum dominance, so maximal branching phytomer distance, at infinitely large source/sink ratio (no neighbours)
+	srAbortThresh[weed] = 			srAbortThresh[cereal];			    // threshold sink/source ratio for branch abortion
+	                                   
+	tb[weed] = 					tb[cereal];						// base temperature for thermal time calculation
+
+	EL[weed] = EL[cereal]; 					// Root elongation rate mm mm-1 day-1 
+	Dinit[weed] = Dinit[cereal];				// Initial root Diameter in m 
+	RTD[weed] = RTD[cereal];					// Root tissue density (g/cm3) (Pages 2013 - generic)
+	MP[weed] = MP[cereal];						// Maximum number of root primordia 
+	ER[weed] = ER[cereal];					// Emergence rate of root primordia per day = 0.968 at 25 degrees which is 0.056 per dregreeday. 
+	IBD[weed] = IBD[cereal];				// Inter Branch Distance 
+	IBDmax[weed] = IBDmax[cereal]; 			// Inter branch distance of the highest root order 
+	RZone[weed] = RZone[cereal];				// No lateral zone in m 
+	RDM0[weed] = RDM0[cereal];					// Ratio Daughter Mother Diameter 
+	RDM1[weed] = RDM1[cereal];					// Ratio Daughter Mother Diameter 
+	sdD[weed] = sdD[cereal];					// Standard deviation diameter for RDM 
+	angleAVG[weed] = angleAVG[cereal];				// average insertion angle of lateral roots
+	angleVAR[weed] = angleVAR[cereal];				// variation in the insertion angle of lateral roots
+	MCP[weed] = MCP[cereal];					//random root movement based on mechanical constraints; radial degrees/m
+	MaxRootOrder[weed] = MaxRootOrder[cereal];
+	fineRootD[weed] = fineRootD[cereal];			// Diameter in m/m
+	fineRootDensity[weed] = fineRootDensity[cereal];		// m fine roots/m coarse root	
+	RLratio[weed] = RLratio[cereal];	 			// Root/Leaf ratio
+	fMyc[weed] = fMyc[cereal];					// +MF 0.00005
+	Groot[weed] = Groot[cereal];				// Base rate of Gravitropism 
+}

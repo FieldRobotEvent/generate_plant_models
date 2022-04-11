@@ -1,0 +1,97 @@
+import static parameters.*;
+
+/* chenopodium */
+
+{
+	// field parameters
+	nrRows[cheno] = 2;                 // number of rows
+	nrPlants[cheno] = 2;               // number of plants in a row
+	rowDistance[cheno] = 0.1;        // distance between rows
+	plantDistance[cheno] = 0.1;       // distance between plants in a row
+	delay[cheno] = 0;                  // germination delay after start of simulation (in days, to represent late sowing)
+	harvest[cheno] = 110;               // duration, i.e. harvest/removal time after emergence (in days)
+	hexa[cheno] = false;               // true: hexagonal layout, rectangular otherwise
+	offspotIntraRow[cheno] = 0;			// fraction of plant distance the plant seed is off-spot
+	offspotInterRow[cheno] = 0;			// fraction of row distance the plant seed is off-spot
+	                                  
+	// plant parameters               
+	determinate[cheno] = true;			// TRUE = determinate, FALSE = indeterminate
+	plastochron[cheno] = 40;           // time between creation of two phytomers (dd)
+	phyllochron[cheno] = 40;			// time between appearance of two leaves (dd)
+	finalPhytNum[cheno] = 23;        // final number of main stem vegetative phytomers
+	nrShortInternodes[cheno] = 0;      // number of bottom internodes that should not elongate 
+	                                  
+	wmaxRoot[cheno] = 5000;           // maximum root system biomass
+	wmaxFlower[cheno] = 125000;        // maximum flower/fruit biomass
+	wmaxInt[cheno] = 500;              // maximum internode biomass
+	wmaxLeaf[cheno] = 500;             // maximum leaf biomass
+	teRoot[cheno] = 1800;              // root growth duration
+	teFlower[cheno] = 500;             // flower/fruit growth duration
+	teInt[cheno] = 300;                // internode growth duration
+	teLeaf[cheno] = 600;               // leaf growth duration
+
+	maxWidthInt[cheno] = 0.0025;			// maxium internode width
+	specificInternodeLength[cheno] = 0.1;  // internode ratio length / biomass (mm/mg)
+
+	amax[cheno] = 25;                  // max photosynthesis rate
+	eff[cheno] = 0.06;                 // initial light use efficiency (initial slope of light response curve)
+	C4[cheno] = false;					// false: C3, true: C4 (parameter only valid when FvCB is true)
+	nitro[cheno] = 0.05;					// leaf nitrogen mass fraction at top of canopy
+	
+	LMA[cheno] = 4;                    // leaf mass per unit area (mg / cm2)
+	leafLife[cheno] = 2;               // life span of a leaf since appearance (expressed as X times its growth duration (te))
+	lwRatio[cheno] = 1.25;                // ratio between leaf blade length and width
+	maxWidth[cheno] = 0.7;             // location on the leaf where width is maximal (fraction of length)
+	shapeCoeff[cheno] = 0.3;           // leaf shape coefficient (0 = rectangular, high value = pinched)
+	leafCurve[cheno] = 70;             // leaf curvature - angle between bottom and top of leaf blade (0 = flat)
+
+	rankLower[cheno] = 2;				// final phtyomer that has properties of lower phytomers (e.g. nr of leaflets, leaf angle, etc) 
+
+	leafAngleLower[cheno] = 70;		// insertion angle of lower leaves (90 = horizontal)
+	leafAngleUpper[cheno] = 70;		// insertion angle of upper leaves (90 = horizontal)
+
+	nrLeafletsLower[cheno] = 1;				 // number of leaflets per leaf for the lower phytomers
+	nrLeafletsUpper[cheno] = 1;				 // number of leaflets per leaf for the upper phytomers
+	petioleFraction[cheno] = 0.05;		 // fraction of biomass partitioned to the petiole
+	petioluleFraction[cheno] = 0;	 // fraction of biomass partitioned to the petiolule
+	specificPetioleLength[cheno] = 2.5; // specific petiole length (mm/mg)
+	specificPetioluleLength[cheno] = 5.0;// specific petiolule length (mm/mg)
+	
+	nrLeavesLower[cheno] = 2;			// number of leaves per phytomer for the lower phytomers
+	nrLeavesUpper[cheno] = 1;			// number of leaves per phytomer for the upper phytomers
+	phyllotaxisLower[cheno] = 90;           // angle between consecutive leaves along a stem for the lower phytomers
+	phyllotaxisUpper[cheno] = 137;           // angle between consecutive leaves along a stem for the upper phytomers
+	
+	varDelay[cheno] = 3;               // max variation in germination delay (in days, 0 = simultaneous germination)
+	seedMass[cheno] = 100;            // seed endosperm mass in mg
+
+	SASextend[cheno] = true;				// toggle internode SAS extention response
+	
+	branching[cheno] = false;			 // toggle branching
+	tillersOnly[cheno] = false;		// true: bud break only if parent internode has length 0 (= tillering)
+	dominance[cheno] = 1.0;				// minimum dominance, so maximal branching phytomer distance, at infinitely large source/sink ratio (no neighbours)
+	srAbortThresh[cheno] = 0.2;			// threshold sink/source ratio for branch abortion
+	
+	tb[cheno] = 0;						// base temperature for thermal time calculation
+
+	EL[cheno] = 51; 					// Root elongation rate mm mm-1 day-1 
+	Dinit[cheno] = 0.0011;				// Initial root Diameter in m 
+	RTD[cheno]	= 200;					// Root tissue density (g/cm3) (Pages 2013 - generic)
+	MP[cheno] = 5;						// Maximum number of root primordia 
+	ER[cheno] = 0.056;					// Emergence rate of root primordia per day = 0.968 at 25 degrees which is 0.056 per dregreeday. 
+	IBD[cheno] = 0.0078;				// Inter Branch Distance 
+	IBDmax[cheno] = 0.039; 			// Inter branch distance of the highest root order 
+	RZone[cheno] = 0.01;				// No lateral zone in m 
+	RDM0[cheno] = 0.5;					// Ratio Daughter Mother Diameter 
+	RDM1[cheno] = 0.375;					// Ratio Daughter Mother Diameter 
+	sdD[cheno] = 0.09;					// Standard deviation diameter for RDM 
+	angleAVG[cheno] = 60;				// average insertion angle of lateral roots
+	angleVAR[cheno] = 20;				// variation in the insertion angle of lateral roots
+	MCP[cheno]	= 5;					//random root movement based on mechanical constraints; radial degrees/m
+	MaxRootOrder[cheno] = 0;
+	fineRootD[cheno] = 0.1;			// Diameter in m/m
+	fineRootDensity[cheno]	= 32;		// m fine roots/m coarse root	
+	RLratio[cheno]	= 1;	 			// Root/Leaf ratio
+	fMyc[cheno] = 0;					// +MF 0.00005
+	Groot[cheno] = 0.01;				// Base rate of Gravitropism 
+}

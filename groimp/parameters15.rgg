@@ -1,0 +1,97 @@
+import static parameters.*;
+
+/* basil */
+
+{
+	// field parameters
+	nrRows[basil] = 7;                  // number of rows
+	nrPlants[basil] = 7;                // number of plants in a row
+	rowDistance[basil] = 0.025;          // distance between rows
+	plantDistance[basil] = 0.025;        // distance between plants in a row
+	delay[basil] = 0;                   // germination delay after start of simulation (in days, to represent late sowing)
+	harvest[basil] = 77;               // duration, i.e. harvest/removal time after emergence (in days)
+	hexa[basil] = false;                // true: hexagonal layout, rectangular otherwise
+	offspotIntraRow[basil] = 0.05;			// fraction of plant distance the plant seed is off-spot
+	offspotInterRow[basil] = 0.05;			// fraction of row distance the plant seed is off-spot
+	                                    
+	// plant parameters                 
+	determinate[basil] = true;			// TRUE = determinate, FALSE = indeterminate
+	plastochron[basil] = 45;            // time between creation of two phytomers (dd)
+	phyllochron[basil] = 45;			// time between appearance of two leaves (dd)
+	finalPhytNum[basil] = 40;        // final number of main stem vegetative phytomers
+	nrShortInternodes[basil] = 0;       // number of bottom internodes that should not elongate 
+                                        
+	wmaxRoot[basil] = 2000;            // maximum root system biomass
+	wmaxFlower[basil] = 5000;         // maximum flower/fruit biomass
+	wmaxInt[basil] = 400;              // maximum internode biomass
+	wmaxLeaf[basil] = 200;              // maximum leaf biomass
+	teRoot[basil] = 1800;               // root growth duration
+	teFlower[basil] = 500;              // flower/fruit growth duration
+	teInt[basil] = 500;                 // internode growth duration
+	teLeaf[basil] = 300;                // leaf growth duration
+
+	maxWidthInt[basil] = 0.002;			// maxium internode width
+	specificInternodeLength[basil] = 0.1;  // internode ratio length / biomass (mm/mg)
+
+	amax[basil] = 25;                   // max photosynthesis rate
+	eff[basil] = 0.06;                  // initial light use efficiency (initial slope of light response curve)
+	C4[basil] = false;					// false: C3, true: C4 (parameter only valid when FvCB is true)
+	nitro[basil] = 0.0625;					// leaf nitrogen mass fraction at top of canopy
+	
+	LMA[basil] = 4;                     // leaf mass per unit area (mg / cm2)
+	leafLife[basil] = 2;                // life span of a leaf since appearance (expressed as X times its growth duration (te))
+	lwRatio[basil] = 2;                 // ratio between leaf blade length and width
+	maxWidth[basil] = 0.5;             // location on the leaf where width is maximal (fraction of length)
+	shapeCoeff[basil] = 1.2;            // leaf shape coefficient (0 = rectangular, high value = pinched)
+	leafCurve[basil] = 90;              // leaf curvature - angle between bottom and top of leaf blade (0 = flat)
+
+	rankLower[basil] = 1;				// final phtyomer that has properties of lower phytomers (e.g. nr of leaflets, leaf angle, etc) 
+
+	leafAngleLower[basil] = 90;		// insertion angle of lower leaves (90 = horizontal)
+	leafAngleUpper[basil] = 90;		// insertion angle of upper leaves (90 = horizontal)
+
+	nrLeafletsLower[basil] = 1;				 // number of leaflets per leaf for the lower phytomers
+	nrLeafletsUpper[basil] = 1;				 // number of leaflets per leaf for the upper phytomers
+	petioleFraction[basil] = 0.2;		 // fraction of biomass partitioned to the petiole
+	petioluleFraction[basil] = 0.025;	 // fraction of biomass partitioned to the petiolule
+	specificPetioleLength[basil] = 1.5; // specific petiole length (mm/mg)
+	specificPetioluleLength[basil] = 5.0;// specific petiolule length (mm/mg)
+	
+	nrLeavesLower[basil] = 2;			// number of leaves per phytomer for the lower phytomers
+	nrLeavesUpper[basil] = 2;			// number of leaves per phytomer for the upper phytomers
+	phyllotaxisLower[basil] = 90;           // angle between consecutive leaves along a stem for the lower phytomers
+	phyllotaxisUpper[basil] = 90;           // angle between consecutive leaves along a stem for the upper phytomers
+	
+	varDelay[basil] = 5;                // max variation in germination delay (in days, 0 = simultaneous germination)
+	seedMass[basil] = 7;             // seed endosperm mass in mg
+	
+	SASextend[basil] = true;				// toggle internode SAS extention response
+	
+	branching[basil] = false;			 // toggle branching
+	tillersOnly[basil] = false;		// true: bud break only if parent internode has length 0 (= tillering)
+	dominance[basil] = 0;				// minimum dominance, so maximal branching phytomer distance, at infinitely large source/sink ratio (no neighbours)
+	srAbortThresh[basil] = 0.2;			// threshold sink/source ratio for branch abortion
+	
+	tb[basil] = 0;						// base temperature for thermal time calculation
+                  
+	EL[basil] = 51; 					// Root elongation rate mm mm-1 day-1 
+	Dinit[basil] = 0.0011;				// Initial root Diameter in m 
+	RTD[basil]	= 200;					// Root tissue density (g/cm3) (Pages 2013 - generic)
+	MP[basil] = 0;						// Maximum number of root primordia 
+	ER[basil] = 0.056;					// Emergence rate of root primordia per day = 0.968 at 25 degrees which is 0.056 per dregreeday. 
+	IBD[basil] = 0.0078;				// Inter Branch Distance 
+	IBDmax[basil] = 0.039; 			// Inter branch distance of the highest root order 
+	RZone[basil] = 0.01;				// No lateral zone in m 
+	RDM0[basil] = 0.5;					// Ratio Daughter Mother Diameter
+	RDM1[basil] = 0.375;				// Ratio Daughter Mother Diameter 
+	sdD[basil] = 0.09;					// Standard deviation diameter for RDM 
+	angleAVG[basil] = 60;				// average insertion angle of lateral roots
+	angleVAR[basil] = 20;				// variation in the insertion angle of lateral roots
+	MCP[basil]	= 5;					//random root movement based on mechanical constraints; radial degrees/m
+	MaxRootOrder[basil] = 1;
+	fineRootD[basil] = 0.1;			// Diameter in m/m
+	fineRootDensity[basil]	= 32;		// m fine roots/m coarse root	
+	RLratio[basil]	= 1;	 			// Root/Leaf ratio
+	fMyc[basil] = 0;					// +MF 0.00005
+	Groot[basil] = 0.25;				// Base rate of Gravitropism 
+}

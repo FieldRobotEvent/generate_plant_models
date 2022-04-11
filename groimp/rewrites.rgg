@@ -1,0 +1,105 @@
+
+import static modules_organs.*;
+import static modules_base.*;
+import static modules_light.*;
+import static parameters.*;
+import static RootModule.*;
+
+static void develop()
+[
+	
+	// gemination
+	pb:PlantBase rh:RH s:Seed, (s.shouldGerminate(pb)) ==> 
+	pb rh
+	if (rootModule == true) (	
+		[
+			RU(180)	RH(random(0,360))
+			RootBase(s)
+			RootApex(s,0)
+		]
+	) else (
+		r:RootSystem
+		{r.initiate(pb);}
+	)
+	bb:BranchBase a:Apex
+	{
+		a.initiate(pb);
+		bb.initiate(a);
+		pb.germinate();
+	}
+	;
+	
+	// produce flower (determinate)
+	a:Apex, (a.shouldProduceGenerative() == true && determinate[a.species] == true ) ==>
+	i:Internode
+	[f:Flower]
+	//a
+	{
+		i.initiate(a);
+		f.initiate(a);
+	}
+	;
+
+	// produce flower (indeterminate)
+	a:Apex, (a.shouldProduceGenerative() == true && determinate[a.species] == false) ==>
+	i:Internode
+	[bb:BranchBase RU(30) RH(random(0,360)) aa:Apex]
+	for (1:a[nrLeaves]) (
+		[l:Leaf {l.initiate(a);}]
+		RH(360/a[nrLeaves]) 
+	)
+	[RL(45) f:Flower]
+	RH(a[phyllotaxis]+random(-10,10))
+	RL(random(-2.5,2.5)) RV(-0.6)
+	a
+	{
+		f.initiate(a);
+		i.initiate(a);
+		bb.initiate(a);
+		aa.initiateAxillary(a);
+		a.increment();
+	}
+	;
+
+	// produce vegetative phytomer
+	a:Apex, (a.shouldProduceVegetative() == true) ==>
+	i:Internode
+	[bb:BranchBase RU(45) RH(random(0,360)) aa:Apex]
+	for (1:a[nrLeaves]) (
+		[l:Leaf {l.initiate(a);}]
+		RH(360/a[nrLeaves]) 
+	)
+	RH(a[phyllotaxis]+random(-10,10))
+	RL(random(-2.5,2.5)) RV(-0.6)
+	a
+	{
+		i.initiate(a);
+		bb.initiate(a);
+		aa.initiateAxillary(a);
+		a.increment();
+	}
+	;
+
+	//shed a leaf
+	
+	l:Leaf, (l.shouldFall() == true) ==>> ;
+	
+	// branch abortion
+	bb:BranchBase, (bb.shouldFall() == true) ==>> ;
+	
+	// plant death
+	pb:PlantBase, (plantDeath == true && pb[die] == true) ==>>;
+	
+	// harvest plants
+	pb:PlantBase, (pb.shouldHarvest() == true) ==>>
+	{
+		pb.harvest();
+	}
+	;
+	
+	{DevelopRoot();}
+	
+	// ignore
+	temp ==> temp;
+]
+
