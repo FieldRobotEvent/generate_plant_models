@@ -1,5 +1,5 @@
 # Generate plant models
-This repository contains code to proceduraly create Gazebo models of different plants using GroIMP and Meshlab.
+This repository contains code to proceduraly create Gazebo models of different plants using GroIMP and Meshlab. We provide a [repository](https://github.com/fieldrobotevent/virtual_maize_field_models) with generated maize and weed models for you to use. However, feel free to generate and test your own plant models.
 
 ## Installation
 Requires Python >= 3.7, [GroIMP 1.6](http://ufgb966.forst.uni-goettingen.de/GroIMP/) and Java 8.
